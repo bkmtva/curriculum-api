@@ -1,0 +1,9 @@
+**/.env
+**/.env_dev
+**/.env_prod
+**/.env-test
+**/venv/
+**/.idea/
+**/__pycache__/
+**/.ipynb_checkpoints/
+
