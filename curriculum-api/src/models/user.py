@@ -4,7 +4,7 @@ from src.models.base import Base, UUIDMixin
 from datetime import datetime
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
-from src.models.faculty import Program
+
 
 class User(UUIDMixin, Base):
     __tablename__ = "tbl_user"
