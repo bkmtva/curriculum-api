@@ -12,7 +12,7 @@ from src.db.elastic import get_elastic
 from src.db.redis import get_redis
 
 from src.models.user import User
-from src.schema.user import UserInDB, TokenData
+from src.schema.user import UserInDB, TokenData, UserLogin
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
@@ -27,6 +27,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 SECRET_KEY = "83daa0256a2289b0fb23693bf1f6034d44396675749244721a2b20e896e11662"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+
 class UserService:
     model = User
     schema = UserInDB
@@ -71,7 +73,7 @@ class UserService:
         except JWTError:
             raise credential_exception
 
-        user = await self.get_user_by_email(self, email=token_data.email)
+        user = await self.get_user_by_email(email=token_data.email)
         if user is None:
             raise credential_exception
 
@@ -123,16 +125,16 @@ class UserService:
         return db_obj
 
     async def authenticate_user(self, email: str, password: str):
-        user = await self.get_user_by_email(self, email)
+        user = await self.get_user_by_email(email)
         if not user:
             return False
-        if not await self._verify_password(self, password, user.hashed_password):
+        if not await self._verify_password(password, user.hashed_password):
             return False
 
         return user
 
-    async def login_for_access_token(self, db, form_data: OAuth2PasswordRequestForm = Depends()):
-        user = await self.authenticate_user(self, form_data.email, form_data.password)
+    async def login_for_access_token(self, form_data: UserLogin):
+        user = await self.authenticate_user(form_data.email, form_data.password)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

@@ -4,6 +4,7 @@ from src.models.base import Base, UUIDMixin
 from datetime import datetime
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
+from src.models.program import Program
 
 
 class User(UUIDMixin, Base):

@@ -21,6 +21,15 @@ class UserRequest(BaseModel):
 class UserCreate(UserRequest):
     password: str
 
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+    class Config:
+        json_loads = orjson.loads
+        json_dumps = orjson_dumps
+        
+
 class UserInDB(UserRequest):
     hashed_password: str
 
