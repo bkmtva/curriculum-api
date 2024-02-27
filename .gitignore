@@ -3,6 +3,7 @@
 **/.env_prod
 **/.env-test
 **/venv/
+**/nginx/
 **/.idea/
 **/__pycache__/
 **/.ipynb_checkpoints/
