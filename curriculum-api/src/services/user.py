@@ -12,7 +12,7 @@ from src.db.elastic import get_elastic
 from src.db.redis import get_redis
 
 from src.models.user import User
-from src.schema.user import UserInDB, TokenData, UserLogin
+from src.schema.user import UserInDB, TokenData, UserLogin, UserRequest
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
@@ -22,7 +22,7 @@ from passlib.context import CryptContext
 from src.services.base import BaseService
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/auth/login")
 
 SECRET_KEY = "83daa0256a2289b0fb23693bf1f6034d44396675749244721a2b20e896e11662"
 ALGORITHM = "HS256"
@@ -133,8 +133,8 @@ class UserService:
 
         return user
 
-    async def login_for_access_token(self, form_data: UserLogin):
-        user = await self.authenticate_user(form_data.email, form_data.password)
+    async def login_for_access_token(self, email: str, password: str):
+        user = await self.authenticate_user(email, password)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
