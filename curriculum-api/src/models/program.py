@@ -1,9 +1,10 @@
 import sqlalchemy as sa
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
-from src.models.base import Base, UUIDMixin
 from sqlalchemy.dialects.postgresql import UUID
-from src.models.faculty import Faculty
+from src.models.base import Base, UUIDMixin
+from src.models.curriculum import Curriculum
+from src.models.template import Template
 
 
 class Program(UUIDMixin, Base):
@@ -12,9 +13,12 @@ class Program(UUIDMixin, Base):
     title = sa.Column(sa.String(300))
     code = sa.Column(sa.String(36))
     cipher = sa.Column(sa.String(36))
-    level = sa.Column(sa.String(36))
+    ects = sa.Column(sa.String(36))
 
-    users = relationship("User", back_populates="program")
+    degree_id = sa.Column(UUID(as_uuid=True), ForeignKey("tbl_degree.id"))
+    degree = relationship("Degree", back_populates="programs")
 
-    faculty_id = sa.Column(UUID(as_uuid=True), ForeignKey('tbl_faculty.id'))
-    faculty = relationship("Faculty", back_populates="programs")
+    template_id = sa.Column(UUID(as_uuid=True), ForeignKey("tbl_template.id"))
+    template = relationship("Template", back_populates="programs")
+
+    curriculums = relationship("Curriculum", back_populates="program")

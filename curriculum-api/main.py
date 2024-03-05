@@ -7,7 +7,7 @@ from fastapi.responses import ORJSONResponse
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
-
+from fastapi.middleware.cors import CORSMiddleware
 from src.core import config
 from src.core.logger import LOGGING
 from src.db import elastic, redis, database
@@ -18,6 +18,18 @@ app = FastAPI(
     docs_url='/api/openapi',
     openapi_url='/api/openapi.json',
     default_response_class=ORJSONResponse,
+)
+
+origins = [
+    "*",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(app_route, prefix='/api')

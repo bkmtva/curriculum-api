@@ -1,6 +1,7 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship
 from src.models.base import Base, UUIDMixin
+from src.models.degree import Degree
 
 
 class Faculty(UUIDMixin, Base):
@@ -9,4 +10,6 @@ class Faculty(UUIDMixin, Base):
     title = sa.Column(sa.String(300))
     logo = sa.Column(sa.String(36))
 
-    programs = relationship("Program", back_populates="faculty")
+    degrees = relationship("Degree", back_populates="faculty")
+    users = relationship("User", back_populates="faculty")
+

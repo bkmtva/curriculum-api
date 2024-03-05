@@ -1,12 +1,17 @@
 from sqlalchemy import create_engine
+import os
+from logging import config as logging_config
+from src.core.logger import LOGGING
+
 from src.models.base import Base
 from src.models.user import User
 from src.models.faculty import Faculty
+from src.models.degree import Degree
 from src.models.program import Program
-import os
-from logging import config as logging_config
-
-from src.core.logger import LOGGING
+from src.models.template import Template
+from src.models.curriculum import Curriculum
+from src.models.course import Course
+from src.models.association import curriculum_course
 
 logging_config.dictConfig(LOGGING)
 
