@@ -9,14 +9,14 @@ from src.db.database import get_db
 from src.db.elastic import get_elastic
 from src.db.redis import get_redis
 
-from src.models.faculty import Program
-from src.schema.program import ProgramSchema
+from src.models.program import Program
+from src.schema.program import ProgramResponse
 from src.services.base import BaseService
 
 
 class ProgramService(BaseService):
     model = Program
-    schema = ProgramSchema
+    schema = ProgramResponse
     service_name = 'program'
 
 

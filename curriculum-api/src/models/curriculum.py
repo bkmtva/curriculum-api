@@ -13,6 +13,7 @@ class Curriculum(UUIDMixin, Base):
 
     title = sa.Column(sa.String(300))
     year = sa.Column(sa.String(36))
+    is_main = sa.Column(sa.Boolean, default=False)
 
     program_id = sa.Column(UUID(as_uuid=True), ForeignKey("tbl_program.id"))
     program = relationship("Program", back_populates="curriculums")

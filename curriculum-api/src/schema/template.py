@@ -9,9 +9,9 @@ import uuid
 from typing import Optional
 
 
-class DegreeCreate(BaseModel):
-    name: str = ""
-    faculty_id: UUID4 or str
+class TemplateCreate(BaseModel):
+    title: str = ""
+    semester_count: int = 8
 
     class Config:
         from_attributes = True
@@ -19,17 +19,19 @@ class DegreeCreate(BaseModel):
         json_dumps = orjson_dumps
 
 
-class DegreeResponse(DegreeCreate):
+class TemplateResponse(TemplateCreate):
     id: UUID4
 
 
-class DegreeRequest(BaseModel):
+class TemplateRequest(BaseModel):
     id: UUID4
 
     class Config:
         json_loads = orjson.loads
         json_dumps = orjson_dumps
 
-class DegreeFilter(BaseModel):
-    faculty_id: Optional[UUID4] = None
+
+class TemplateFilter(BaseModel):
+    year: str = ''
+    is_main: bool = False
 

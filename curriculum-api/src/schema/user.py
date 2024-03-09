@@ -9,10 +9,9 @@ import uuid
 from typing import Optional
 
 class UserRequest(BaseModel):
-    id: UUID4 or str
-    first_name: str = ""
+    first_name: str or None = ""
     last_name: str or None = ""
-    email: str = ""
+    email: str
     profile_image: Optional[str] or None = ''
     created_at: datetime = datetime.utcnow()
     last_login_at: datetime or None = datetime.utcnow()
@@ -22,6 +21,7 @@ class UserRequest(BaseModel):
 
 
     class Config:
+        from_attributes = True
         json_loads = orjson.loads
         json_dumps = orjson_dumps
 
@@ -40,7 +40,7 @@ class UserLogin(BaseModel):
         json_dumps = orjson_dumps
         
 
-class UserInDB(UserRequest):
+class UserInDB(UserResponse):
     password: str
 
 
@@ -50,6 +50,16 @@ class Token(BaseModel):
     message: str
     token_type: str = "bearer"
 
+class RefreshToken(BaseModel):
+    refresh_token: str
+
+class RefreshedToken(BaseModel):
+    access_token: str
+    message: str
+    token_type: str = "bearer"
 
 class TokenData(BaseModel):
-    email: str or None = None
+    user_id: str | None = None
+    is_superuser: bool = False
+    disabled: bool | None = None
+    email: str | None = None

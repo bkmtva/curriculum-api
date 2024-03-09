@@ -23,11 +23,11 @@ from passlib.context import CryptContext
 from src.services.base import BaseService
 from fastapi.responses import JSONResponse
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/auth/login")
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/auth/login")
 
 SECRET_KEY = "83daa0256a2289b0fb23693bf1f6034d44396675749244721a2b20e896e11662"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 0.23
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_MINUTES = 60*24
 
 
@@ -42,7 +42,20 @@ class UserService:
         self.elastic = elastic
         self.db = db
 
-    async def create_user(self, form_data):
+    async def create_user(self, form_data, token_data: str):
+        credential_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No access",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+        token_data = await self.verify_token(token)
+        if not token_data:
+            raise credential_exception
+        if token_data:
+            user = await self.get_user_by_email(email=token_data.email)
+            if not user or not user.is_superuser:
+                raise credential_exception
+
         existing_user = await self._get_object_from_db(email=form_data.email)
         if existing_user:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
@@ -61,6 +74,17 @@ class UserService:
         else:
             expire = datetime.utcnow() + timedelta(minutes=15)
 
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        return encoded_jwt
+    
+    
+    async def create_refresh_token(self, data: dict, expires_delta: timedelta or None = None):
+        to_encode = data.copy()
+        if expires_delta:
+            expire = datetime.utcnow() + expires_delta
+        else:
+            expire = datetime.utcnow() + timedelta(minutes=15)
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
@@ -122,6 +146,7 @@ class UserService:
 
     async def get_user_by_email(self, email: str):
         db_obj = await self._object_from_cache(email)
+        print(db_obj)
         if not db_obj:
             db_obj = await self._get_object_from_db(email)
             if not db_obj:
@@ -139,15 +164,7 @@ class UserService:
 
         return user
 
-    async def create_refresh_token(self, data: dict, expires_delta: timedelta or None = None):
-        to_encode = data.copy()
-        if expires_delta:
-            expire = datetime.utcnow() + expires_delta
-        else:
-            expire = datetime.utcnow() + timedelta(minutes=15)
-        to_encode.update({"exp": expire})
-        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-        return encoded_jwt
+    
 
     async def login_for_access_token(self, email: str, password: str):
         user = await self.authenticate_user(email, password)
@@ -160,8 +177,8 @@ class UserService:
 
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         refresh_token_expires = timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
-        access_token = await self.create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
-        refresh_token = await self.create_refresh_token(data={"sub": user.email}, expires_delta=refresh_token_expires)
+        access_token = await self.create_access_token(data={"sub": {'user_id': str(user.id),  'is_superuser': user.is_superuser, 'email': user.email}}, expires_delta=access_token_expires)
+        refresh_token = await self.create_refresh_token(data={"sub": {'user_id': str(user.id),  'is_superuser': user.is_superuser, 'email': user.email}}, expires_delta=refresh_token_expires)
         return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token, "message": "Authentication success"}
 
     async def get_all(self, rubric_type: str = 'news'):
@@ -174,27 +191,27 @@ class UserService:
         )
         return result.scalars()
 
-    async def verify_token(self, token: str):
+    # async def verify_token(self, token: str):
+    #     credential_exception = HTTPException(
+    #         status_code=status.HTTP_401_UNAUTHORIZED,
+    #         detail="Token has expired",
+    #         headers={"WWW-Authenticate": "Bearer"}
+    #     )
+    #
+    #     try:
+    #         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_sub": False})
+    #         email: str = payload.get("sub")
+    #         if email is None:
+    #             raise credential_exception
+    #         token_data = TokenData(email=email)
+    #     except JWTError as e:
+    #         print(f"JWTError: {e}")
+    #         raise credential_exception
+    #
+    #     return token_data
 
-        credential_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has expired",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
-        try:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-
-            email: str = payload.get("sub")
-            if email is None:
-                raise credential_exception
-            token_data = TokenData(email=email)
-        except JWTError:
-            raise credential_exception
-
-        return token_data
-
-    async def refresh_access_token(self, token: str):
-        refesh_data = await self.verify_token(token)
+    async def refresh_access_token(self, refesh_data: str):
+        # refesh_data = await self.verify_token(token.refresh_token)
         new_access_token = await self.create_access_token(refesh_data.dict())
 
         return {
@@ -203,38 +220,20 @@ class UserService:
             "status": status.HTTP_200_OK
         }
 
-    # async def get_user_info(self, token: str):
-    #     user_data = await self.verify_token(token)
-    #
-    #     # dummy_user_info = {
-    #     #     "id": uuid.UUID('5e1fb87d-4db4-4c06-ace3-b3a4d1302536'),
-    #     #     "first_name": "John",
-    #     #     "last_name": "Doe",
-    #     #     "email": "john@example.com",
-    #     #     "profile_image": "profile_image_url",
-    #     #     "last_login_at": datetime.now(),
-    #     #     "created_at": datetime.now(),
-    #     #     "is_active": True,
-    #     #     "is_superuser": False,
-    #     #     "faculty_id": uuid.UUID('5e1fb87d-4db4-4c06-ace3-b3a4d1302536')
-    #     # }
-    #
-    #     return dummy_user_info
-
-    async def get_user_info(self, token: str):
+    async def get_user_info(self, token_data: str):
         credential_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-        token_data = await self.verify_token(token)
+        # token_data = await self.verify_token(token)
         user = await self.get_user_by_email(email=token_data.email)
         if user is None:
             raise credential_exception
-        
+        print(user.dict())
         user_response = UserResponse(**user.dict())
-
+        print(user.dict())
         return user_response
 
 

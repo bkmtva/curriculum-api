@@ -1,58 +1,63 @@
-from datetime import datetime, timedelta, timezone
 from typing import Annotated
-import asyncio
-from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from pydantic import BaseModel
 
-# to get a string like this run:
-# openssl rand -hex 32
-SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+from src.core.config import SECRET_KEY, ALGORITHM
+from src.utils.cache_db import auth_redis_db
+
+# Схема аутентификации OAuth2
+oauth2_scheme = HTTPBearer()
 
 
-class JwtGenerator:
-    def __init__(self, user_id: str, is_superuser: bool = False, access_token_expires_in: int = None,
-                 refresh_token_expires_in: int = None):
-        self.user_id = user_id
-        self.is_superuser = is_superuser
-        self.access_token_expires_in = access_token_expires_in
-        self.refresh_token_expires_in = refresh_token_expires_in
+# Модель данных токена
+class TokenData(BaseModel):
+    user_id: str | None = None
+    is_superuser: bool = False
+    disabled: bool | None = None
+    email: str | None = None
 
-    async def create_access_token(self, data: dict, expires_delta: timedelta | None = None):
-        loop = asyncio.get_event_loop()
 
-        to_encode = data.copy()
-        if expires_delta:
-            expire = datetime.now(timezone.utc) + expires_delta
-        else:
-            expire = datetime.now(timezone.utc) + timedelta(minutes=15)
-        to_encode.update({"exp": expire})
+# Функция проверки токена на наличие в черном списке
+async def is_token_blacklisted(jti: str = 'ghj') -> bool:
+    key = 'expired_access::' + str(jti)
+    token_in_redis = await auth_redis_db.get(key)
+    return token_in_redis is not None
 
-        encoded_jwt = await loop.run_in_executor(None, jwt.encode, to_encode, SECRET_KEY, ALGORITHM)
-        return encoded_jwt
 
-    async def create_refresh_token(self, data: dict, expires_delta: timedelta | None = None):
-        loop = asyncio.get_event_loop()
+# Функция для получения текущего пользователя из токена
+async def get_current_user(token: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
+    # Исключение для невалидных учетных данных
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        print(token)
+        # Декодирование токена и проверка его валидности
+        payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_sub": False})
+        jti = payload.get("jti")
+        if await is_token_blacklisted(jti):
+            raise credentials_exception
+        subject = payload.get("sub")
+        print('subjectoekfoek', subject)
+        if subject is None:
+            raise credentials_exception
+        # Создание объекта данных токена
+        token_data = TokenData(user_id=subject['user_id'], email=subject['email'], is_superuser=subject["is_superuser"])
+    except JWTError:
+        raise credentials_exception
+    return token_data
 
-        to_encode = data.copy()
-        if expires_delta:
-            expire = datetime.now(timezone.utc) + expires_delta
-        else:
-            expire = datetime.now(timezone.utc) + timedelta(days=30)  # Example: Refresh token expires in 30 days
-        to_encode.update({"exp": expire})
 
-        encoded_jwt = await loop.run_in_executor(None, jwt.encode, to_encode, SECRET_KEY, ALGORITHM)
-        return encoded_jwt
-
-    async def _get_identity(self):
-        return {
-            'user_id': self.user_id,
-            'is_superuser': self.is_superuser,
-            # 'user_agent': self.user_agent,
-            # 'unique_payload_key': self.unique_payload_key,
-            # 'rules': self.rules,
-        }
+# Функция для получения текущего активного пользователя
+async def get_current_active_user(
+    token_data: TokenData = Depends(get_current_user)
+):
+    # Проверка на активность пользователя
+    if token_data.disabled:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return token_data

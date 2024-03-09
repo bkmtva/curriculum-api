@@ -10,13 +10,13 @@ from src.db.elastic import get_elastic
 from src.db.redis import get_redis
 
 from src.models.faculty import Faculty
-from src.schema.faculty import FacultySchema
+from src.schema.faculty import FacultyResponse
 from src.services.base import BaseService
 
 
 class FacultyService(BaseService):
     model = Faculty
-    schema = FacultySchema
+    schema = FacultyResponse
     service_name = 'faculty'
 
 
