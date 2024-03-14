@@ -27,7 +27,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 SECRET_KEY = "83daa0256a2289b0fb23693bf1f6034d44396675749244721a2b20e896e11662"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 60*24
 REFRESH_TOKEN_EXPIRE_MINUTES = 60*24
 
 
@@ -48,7 +48,7 @@ class UserService:
             detail="No access",
             headers={"WWW-Authenticate": "Bearer"}
         )
-        token_data = await self.verify_token(token)
+        # token_data = await self.verify_token(token)
         if not token_data:
             raise credential_exception
         if token_data:
@@ -177,8 +177,8 @@ class UserService:
 
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         refresh_token_expires = timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
-        access_token = await self.create_access_token(data={"sub": {'user_id': str(user.id),  'is_superuser': user.is_superuser, 'email': user.email}}, expires_delta=access_token_expires)
-        refresh_token = await self.create_refresh_token(data={"sub": {'user_id': str(user.id),  'is_superuser': user.is_superuser, 'email': user.email}}, expires_delta=refresh_token_expires)
+        access_token = await self.create_access_token(data={"sub": {'user_id': str(user.id),  'is_superuser': user.is_superuser, 'email': user.email, 'faculty_id': str(user.faculty_id)}}, expires_delta=access_token_expires)
+        refresh_token = await self.create_refresh_token(data={"sub": {'user_id': str(user.id),  'is_superuser': user.is_superuser, 'email': user.email, 'faculty_id': str(user.faculty_id)}}, expires_delta=refresh_token_expires)
         return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token, "message": "Authentication success"}
 
     async def get_all(self, rubric_type: str = 'news'):

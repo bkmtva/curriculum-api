@@ -16,12 +16,18 @@ async def curriculum_create(form_data: CurriculumCreate, current_user: Annotated
                       curriculum_service: CurriculumService = Depends(get_curriculum_service)):
     return await curriculum_service.create_object(form_data)
 
-@router.get('/list_main_curriculums_by', response_model=PaginationResponse)
-async def main_curriculum_list_by(pagination: Annotated[Pagination, Depends()],
+@router.get('/list_all_curriculums_by', response_model=PaginationResponse)
+async def curriculum_list_by(pagination: Annotated[Pagination, Depends()],
                        current_user: Annotated[TokenData, Depends(get_current_active_user)],
                        filter_params: Annotated[CurriculumFilter, Depends()],
                       curriculum_service: CurriculumService = Depends(get_curriculum_service)):
     return await curriculum_service.get_all_with_pagination(pagination, filter_params)
+
+
+
+@router.get('/main_curriculum_by_program')
+async def main_curriculum_list_by(current_user: Annotated[TokenData, Depends(get_current_active_user)], program_id: str, year: str = "2024", curriculum_service: CurriculumService = Depends(get_curriculum_service)):
+    return await curriculum_service.get_all_main(year, program_id)
 
 # @router.get("/curriculum-info", response_model=CurriculumResponse)
 # async def get_current_curriculum(current_user: Annotated[TokenData, Depends(get_current_active_user)],

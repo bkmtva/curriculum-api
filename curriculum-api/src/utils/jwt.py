@@ -18,6 +18,7 @@ class TokenData(BaseModel):
     is_superuser: bool = False
     disabled: bool | None = None
     email: str | None = None
+    faculty_id: str | None = None
 
 
 # Функция проверки токена на наличие в черном списке
@@ -47,7 +48,8 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Depends(oauth2_
         if subject is None:
             raise credentials_exception
         # Создание объекта данных токена
-        token_data = TokenData(user_id=subject['user_id'], email=subject['email'], is_superuser=subject["is_superuser"])
+        token_data = TokenData(user_id=subject['user_id'], email=subject['email'],
+                               is_superuser=subject["is_superuser"], faculty_id=subject.get("faculty_id"))
     except JWTError:
         raise credentials_exception
     return token_data

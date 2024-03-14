@@ -22,6 +22,8 @@ async def degree_list_by(pagination: Annotated[Pagination, Depends()],
                        current_user: Annotated[TokenData, Depends(get_current_active_user)],
                        filter_params: Annotated[DegreeFilter, Depends()],
                       degree_service: DegreeService = Depends(get_degree_service)):
+    filter_params.faculty_id = current_user.faculty_id
+    print("allllllllllllllllllllllll", filter_params)
     return await degree_service.get_all_with_pagination(pagination, filter_params)
 # @router.get("/degree-info", response_model=DegreeResponse)
 # async def get_current_degree(current_user: Annotated[TokenData, Depends(get_current_active_user)],

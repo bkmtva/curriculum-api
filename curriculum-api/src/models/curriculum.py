@@ -4,8 +4,18 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSON
 from src.models.base import Base, UUIDMixin
 from src.models.course import Course
-from src.models.association import curriculum_course
+# from src.models.association import curriculum_course
 # from src.models.user import User
+class CurriculumCourse(Base):
+    __tablename__ = 'curriculum_course'
+
+    curriculum_id = sa.Column(UUID(as_uuid=True), ForeignKey("tbl_curriculum.id", ondelete='CASCADE'), primary_key=True)
+    course_id = sa.Column(UUID(as_uuid=True), ForeignKey("tbl_course.id", ondelete='CASCADE'), primary_key=True)
+    semester = sa.Column(sa.Integer, nullable=False)
+    order_in_semester = sa.Column(sa.Integer, nullable=False)
+
+    curriculum = relationship("Curriculum", back_populates="courses")
+    course = relationship("Course", back_populates="curriculums")
 
 
 class Curriculum(UUIDMixin, Base):
@@ -23,7 +33,12 @@ class Curriculum(UUIDMixin, Base):
 
     histories = relationship("CurriculumEditHistory", back_populates="curriculum")
     
-    courses = relationship("Course", secondary=curriculum_course, back_populates="curriculums")
+    courses = relationship("CurriculumCourse", back_populates="curriculum", order_by=[
+        CurriculumCourse.semester,
+        CurriculumCourse.order_in_semester
+    ])
+
+
 
 
 class CurriculumEditHistory(UUIDMixin, Base):

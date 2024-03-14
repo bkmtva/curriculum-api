@@ -23,6 +23,10 @@ async def program_list_by(pagination: Annotated[Pagination, Depends()],
                       program_service: ProgramService = Depends(get_program_service)):
     return await program_service.get_all_with_pagination(pagination, filter_params)
 
+
+@router.get('/list_main_programs')
+async def main_program_list_by(current_user: Annotated[TokenData, Depends(get_current_active_user)], year: str="2024", program_service: ProgramService = Depends(get_program_service)):
+    return await program_service.get_all_main(year)
 # @router.get("/program-info", response_model=ProgramResponse)
 # async def get_current_program(current_user: Annotated[TokenData, Depends(get_current_active_user)],
 #                               program_service: ProgramService = Depends(get_program_service)):

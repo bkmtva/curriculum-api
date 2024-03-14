@@ -80,5 +80,5 @@ class CurriculumRequest(BaseModel):
 
 
 class CurriculumFilter(BaseModel):
-    year: str = ''
-    is_main: bool = False
+    year: str = '2024'
+    program_id: str or UUID4 or None = None

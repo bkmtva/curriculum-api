@@ -8,9 +8,9 @@ from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import class_mapper, RelationshipProperty, selectinload, joinedload
-
+from fastapi import HTTPException, status
 from src.utils.pagination import Pagination, paginate
-from src.models.association import curriculum_course
+# from src.models.association import curriculum_course
 logger = logging.getLogger(__name__)
 
 class BaseService(ABC):

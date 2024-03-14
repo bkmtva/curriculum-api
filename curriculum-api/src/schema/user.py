@@ -63,3 +63,4 @@ class TokenData(BaseModel):
     is_superuser: bool = False
     disabled: bool | None = None
     email: str | None = None
+    faculty_id: str | None = None

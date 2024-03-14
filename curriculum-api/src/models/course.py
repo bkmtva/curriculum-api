@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from src.models.base import Base, UUIDMixin
 # from src.models.user import User
-from src.models.association import curriculum_course
+# from src.models.association import curriculum_course
 # from src.models.curriculum import Curriculum
 
 class Course(UUIDMixin, Base):
@@ -21,4 +21,4 @@ class Course(UUIDMixin, Base):
     user_id = sa.Column(UUID(as_uuid=True), ForeignKey("tbl_user.id"))
     user = relationship("User", back_populates="courses")
 
-    curriculums = relationship("Curriculum", secondary=curriculum_course, back_populates="courses")
+    curriculums = relationship("CurriculumCourse", back_populates="course")
