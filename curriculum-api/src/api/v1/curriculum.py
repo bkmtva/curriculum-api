@@ -29,6 +29,13 @@ async def curriculum_list_by(pagination: Annotated[Pagination, Depends()],
 async def main_curriculum_list_by(current_user: Annotated[TokenData, Depends(get_current_active_user)], program_id: str, year: str = "2024", curriculum_service: CurriculumService = Depends(get_curriculum_service)):
     return await curriculum_service.get_all_main(year, program_id)
 
+
+@router.delete('/delete_curriculum', status_code=status.HTTP_204_NO_CONTENT)
+async def curriculum_delete(curriculum_id: str,
+                         current_user: Annotated[TokenData, Depends(get_current_active_user)],
+                         curriculum_service: CurriculumService = Depends(get_curriculum_service)):
+    return await curriculum_service.delete_by_id(curriculum_id)
+
 # @router.get("/curriculum-info", response_model=CurriculumResponse)
 # async def get_current_curriculum(current_user: Annotated[TokenData, Depends(get_current_active_user)],
 #                               curriculum_service: CurriculumService = Depends(get_curriculum_service)):

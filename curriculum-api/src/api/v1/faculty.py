@@ -23,6 +23,13 @@ async def faculty_list(pagination: Annotated[Pagination, Depends()],
                       faculty_service: FacultyService = Depends(get_faculty_service)):
     return await faculty_service.get_all_with_pagination(pagination)
 
+
+@router.delete('/delete_faculty', status_code=status.HTTP_204_NO_CONTENT)
+async def faculty_delete(faculty_id: str,
+                         current_user: Annotated[TokenData, Depends(get_current_active_user)],
+                         faculty_service: FacultyService = Depends(get_faculty_service)):
+    return await faculty_service.delete_by_id(faculty_id)
+
 # @router.get("/faculty-info", response_model=FacultyResponse)
 # async def get_current_faculty(current_user: Annotated[TokenData, Depends(get_current_active_user)],
 #                               faculty_service: FacultyService = Depends(get_faculty_service)):

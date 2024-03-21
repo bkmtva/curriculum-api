@@ -5,7 +5,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from pydantic import BaseModel
 
-from src.core.config import SECRET_KEY, ALGORITHM
+from src.core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from src.utils.cache_db import auth_redis_db
 
 # Схема аутентификации OAuth2
@@ -28,7 +28,32 @@ async def is_token_blacklisted(jti: str = 'ghj') -> bool:
     return token_in_redis is not None
 
 
-# Функция для получения текущего пользователя из токена
+async def set_token_blacklisted(jti: str, token: HTTPAuthorizationCredentials = Depends(oauth2_scheme)) -> bool:
+    access_key = 'expired_access::' + str(jti)
+    # refresh_key = 'refresh::' + jti
+    await auth_redis_db.setex(access_key, ACCESS_TOKEN_EXPIRE_MINUTES, str(token))
+    return None
+
+async def logout_current_user(token: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
+    # Исключение для невалидных учетных данных
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+
+        payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_sub": False})
+        jti = payload.get("jti")
+        if await is_token_blacklisted(jti):
+            raise HTTPException(status_code=400, detail="Already logged out")
+        else:
+            await set_token_blacklisted(jti, token)
+    except JWTError:
+        raise credentials_exception
+    return {'message': 'Logout success'}
+
+
 async def get_current_user(token: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
     # Исключение для невалидных учетных данных
     credentials_exception = HTTPException(
@@ -37,17 +62,14 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Depends(oauth2_
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        print(token)
-        # Декодирование токена и проверка его валидности
         payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_sub": False})
         jti = payload.get("jti")
         if await is_token_blacklisted(jti):
             raise credentials_exception
         subject = payload.get("sub")
-        print('subjectoekfoek', subject)
         if subject is None:
             raise credentials_exception
-        # Создание объекта данных токена
+
         token_data = TokenData(user_id=subject['user_id'], email=subject['email'],
                                is_superuser=subject["is_superuser"], faculty_id=subject.get("faculty_id"))
     except JWTError:
@@ -55,7 +77,7 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Depends(oauth2_
     return token_data
 
 
-# Функция для получения текущего активного пользователя
+
 async def get_current_active_user(
     token_data: TokenData = Depends(get_current_user)
 ):

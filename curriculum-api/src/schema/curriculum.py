@@ -74,11 +74,10 @@ class CurriculumResponse(BaseModel):
         )
 
 
-
 class CurriculumRequest(BaseModel):
     id: UUID4
 
 
 class CurriculumFilter(BaseModel):
-    year: str = '2024'
-    program_id: str or UUID4 or None = None
+    year: Optional[str] = '2024'
+    program_id: Optional[str] = None

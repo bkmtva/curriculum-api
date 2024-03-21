@@ -63,10 +63,7 @@ class CurriculumService(BaseService):
             main_curr['semester_count'] = main_curr.get("program", {}).template.semester_count
             main_curr['courses'] = main_curr.get("courses", {})
             main_curr.pop("program")
-            program_title = main_curr.pop("program_title")
-            program_title = main_curr.pop("program_title")
-            ordered_data = {"program_title": program_title}
-            ordered_data.update(data)
+
 
             return main_curr
 

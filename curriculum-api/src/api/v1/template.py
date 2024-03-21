@@ -23,6 +23,12 @@ async def main_template_list_by(pagination: Annotated[Pagination, Depends()],
     return await template_service.get_all_with_pagination(pagination)
 
 
+@router.delete('/delete_template', status_code=status.HTTP_204_NO_CONTENT)
+async def template_delete(template_id: str,
+                         current_user: Annotated[TokenData, Depends(get_current_active_user)],
+                         template_service: TemplateService = Depends(get_template_service)):
+    return await template_service.delete_by_id(template_id)
+
 # @router.get("/template-info", response_model=TemplateResponse)
 # async def get_current_template(current_user: Annotated[TokenData, Depends(get_current_active_user)],
 #                               template_service: TemplateService = Depends(get_template_service)):

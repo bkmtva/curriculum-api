@@ -5,6 +5,7 @@ from src.api.v1.degree import router as degree_route
 from src.api.v1.template import router as template_route
 from src.api.v1.program import router as program_route
 from src.api.v1.curriculum import router as curriculum_route
+from src.api.v1.course import router as course_route
 
 urls = APIRouter(prefix='/v1')
 
@@ -14,3 +15,4 @@ urls.include_router(degree_route)
 urls.include_router(template_route)
 urls.include_router(program_route)
 urls.include_router(curriculum_route)
+urls.include_router(course_route)

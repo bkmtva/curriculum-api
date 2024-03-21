@@ -25,6 +25,13 @@ async def degree_list_by(pagination: Annotated[Pagination, Depends()],
     filter_params.faculty_id = current_user.faculty_id
     print("allllllllllllllllllllllll", filter_params)
     return await degree_service.get_all_with_pagination(pagination, filter_params)
+
+
+@router.delete('/delete_degree', status_code=status.HTTP_204_NO_CONTENT)
+async def degree_delete(degree_id: str,
+                         current_user: Annotated[TokenData, Depends(get_current_active_user)],
+                         degree_service: DegreeService = Depends(get_degree_service)):
+    return await degree_service.delete_by_id(degree_id)
 # @router.get("/degree-info", response_model=DegreeResponse)
 # async def get_current_degree(current_user: Annotated[TokenData, Depends(get_current_active_user)],
 #                               degree_service: DegreeService = Depends(get_degree_service)):

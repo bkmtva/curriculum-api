@@ -10,7 +10,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import class_mapper, RelationshipProperty, selectinload, joinedload
 from fastapi import HTTPException, status
 from src.utils.pagination import Pagination, paginate
-# from src.models.association import curriculum_course
+
 logger = logging.getLogger(__name__)
 
 class BaseService(ABC):
@@ -125,15 +125,7 @@ class BaseService(ABC):
         relationships = class_mapper(self.model).relationships.keys()
 
         for relationship in relationships:
-            if relationship == 'courses':
-                print(type(query))
-                query = query.join(curriculum_course).filter((curriculum_course.c.curriculum_id == self.model.id)).add_columns(
-                                                                    curriculum_course.c.semester,
-                                                                    curriculum_course.c.order_in_semester
-                                                                )
-                query = query.options(selectinload(getattr(self.model, relationship)))
-            else:
-                query = query.options(selectinload(getattr(self.model, relationship)))
+            query = query.options(selectinload(getattr(self.model, relationship)))
 
         return query
 
