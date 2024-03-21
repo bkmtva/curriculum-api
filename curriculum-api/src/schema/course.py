@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 from datetime import datetime
 
 from orjson import orjson
@@ -19,7 +19,7 @@ class CourseCreate(BaseModel):
     cr: str = ''
     ects: str = ''
     term: str = ''
-    user_id: UUID4 or str = ''
+    user_id: Optional[Union[UUID4, str]] = ''
 
     class Config:
         from_attributes = True
@@ -29,7 +29,7 @@ class CourseCreate(BaseModel):
 
 
 class CourseResponse(CourseCreate):
-    id: Optional[UUID4] = None
+    id: Optional[UUID4] or Optional[str] or Optional[None] = None
 
 
 class CourseRequest(BaseModel):

@@ -8,10 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.database import get_db
 from src.db.elastic import get_elastic
 from src.db.redis import get_redis
-from sqlalchemy.orm import class_mapper, RelationshipProperty, selectinload, joinedload
+from sqlalchemy.orm import class_mapper, RelationshipProperty, selectinload, joinedload, defer
 from src.models.curriculum import Curriculum
 from src.models.course import Course
 from src.models.program import Program
+from src.models.user import User
 from src.models.curriculum import CurriculumCourse as curriculum_course
 from src.schema.curriculum import CurriculumResponse
 from src.services.base import BaseService
@@ -68,28 +69,24 @@ class CurriculumService(BaseService):
             return main_curr
 
 
-        async def get_all(self, year: str = "2024", program_id: str = ""):
-            subquery = (
-                select(self.model.program_id)
-                .filter(self.model.year == year)
-                .filter(self.model.program_id == program_id)
-                .alias("subquery")
-            )
+        async def get_all(self, year: str = "2024", program_id: str = None, user_id: str = None):
+            query = (
+                select(self.model)
+                .filter(self.model.year == year, self.model.created_by == user_id)
+                .options(
+                    selectinload(Curriculum.program).options(selectinload(Program.template)),
+                    selectinload(Curriculum.courses).options(selectinload(curriculum_course.course)),
+                    selectinload(Curriculum.user).options(defer(User.password)),
 
-            main_curriculums = (
-                await self.db.execute(
-                    select(self.model)
-                    .join(subquery)
-                    .options(
-                        selectinload(Curriculum.courses)
-                        .options(selectinload(curriculum_course.course)
-                                 ),
-                    )
                 )
-            ).scalars().all()
-            if not main_curriculums:
-                raise HTTPException(status_code=404, detail=f"No main curriculums found for the year {year}")
-            return {"main_currs": [curriculum.__dict__ for curriculum in main_curriculums]}
+            )
+            if program_id:
+                query = query.filter(self.model.program_id == program_id)
+            curriculums = await self.db.execute(query)
+            curriculums = curriculums.scalars().all()
+            if not curriculums:
+                raise HTTPException(status_code=404, detail=f"No curriculums found for the year {year} and program")
+            return [curriculum.__dict__ for curriculum in curriculums]
 
 
 
