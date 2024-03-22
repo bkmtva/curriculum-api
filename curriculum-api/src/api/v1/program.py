@@ -4,7 +4,6 @@ from src.services.program import get_program_service, ProgramService
 from fastapi.security import HTTPBearer
 from src.utils.jwt import TokenData, get_current_active_user
 from typing import Annotated
-from src.utils.pagination import PaginationResponse, Pagination
 
 router = APIRouter(prefix="/program", tags=["program"])
 
@@ -16,12 +15,12 @@ async def program_create(form_data: ProgramCreate, current_user: Annotated[Token
                       program_service: ProgramService = Depends(get_program_service)):
     return await program_service.create_object(form_data)
 
-@router.get('/list_programs_by', response_model=PaginationResponse)
-async def program_list_by(pagination: Annotated[Pagination, Depends()],
+@router.get('/list_programs_by')
+async def program_list_by(
                        current_user: Annotated[TokenData, Depends(get_current_active_user)],
                        filter_params: Annotated[ProgramFilter, Depends()],
                       program_service: ProgramService = Depends(get_program_service)):
-    return await program_service.get_all_with_pagination(pagination, filter_params)
+    return await program_service.get_all_with_pagination(filter_params)
 
 
 @router.get('/list_main_programs')

@@ -4,7 +4,6 @@ from src.services.course import get_course_service, CourseService
 from fastapi.security import HTTPBearer
 from src.utils.jwt import TokenData, get_current_active_user
 from typing import Annotated
-from src.utils.pagination import PaginationResponse, Pagination
 from typing import List
 
 router = APIRouter(prefix="/course", tags=["course"])
@@ -32,14 +31,13 @@ async def course_create(courses_data: List[CourseCreate], current_user: Annotate
     return created_courses
 
 
-@router.get('/get_all_courses', response_model=PaginationResponse)
-async def course_list(pagination: Annotated[Pagination, Depends()],
-                      current_user: Annotated[TokenData, Depends(get_current_active_user)],
+@router.get('/get_all_courses')
+async def course_list(current_user: Annotated[TokenData, Depends(get_current_active_user)],
                       filter_params: Annotated[CourseFilter, Depends()],
                       course_service: CourseService = Depends(get_course_service)):
     if not filter_params.user_id:
         filter_params.user_id = current_user.user_id
-    return await course_service.get_all_with_pagination(pagination, filter_params)
+    return await course_service.get_all_with_pagination(filter_params)
 
 
 @router.delete('/delete_course', status_code=status.HTTP_204_NO_CONTENT)

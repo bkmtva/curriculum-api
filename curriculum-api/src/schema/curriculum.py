@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 from datetime import datetime
 
 from orjson import orjson
@@ -15,10 +15,10 @@ from src.schema.course import CourseResponse
 
 class CurriculumCreate(BaseModel):
     title: str = ''
-    year: str = ""
-    is_main: bool
+    year: str = "2024"
+    is_main: bool = False
     program_id: UUID4 or str
-    created_by: UUID4 or str
+    created_by: Optional[Union[UUID4, str]] = ''
 
     class Config:
         json_loads = orjson.loads

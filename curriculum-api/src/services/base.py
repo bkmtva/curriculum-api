@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import class_mapper, RelationshipProperty, selectinload, joinedload
 from fastapi import HTTPException, status
-from src.utils.pagination import Pagination, paginate
+from src.utils.pagination import paginate
 
 logger = logging.getLogger(__name__)
 
@@ -46,15 +46,15 @@ class BaseService(ABC):
         result = await self.db.execute(select(self.model))
         return result.scalars()
 
-    async def get_all_with_pagination(self, pagination: Pagination, filter_params=None):
+    async def get_all_with_pagination(self, filter_params=None):
         if filter_params is None:
             logger.debug("no no")
-            return await paginate(self.db, pagination, select(self.model), self.schema)
+            return await paginate(self.db, select(self.model), self.schema)
         else:
             query = await self.get_query(filter_params)
             logger.debug("yes yes %s", query)
             print("yes yes %s", query)
-            return await paginate(self.db, pagination, query, self.schema)
+            return await paginate(self.db, query, self.schema)
 
     async def get_by_id(self, obj_id: str):
         db_obj = await self._object_from_cache(obj_id)

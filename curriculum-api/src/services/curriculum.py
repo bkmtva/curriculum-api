@@ -4,16 +4,16 @@ from elasticsearch import AsyncElasticsearch
 from fastapi import Depends
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from typing import Annotated, List
 from src.db.database import get_db
 from src.db.elastic import get_elastic
 from src.db.redis import get_redis
-from sqlalchemy.orm import class_mapper, RelationshipProperty, selectinload, joinedload, defer
+from sqlalchemy.orm import class_mapper, RelationshipProperty, selectinload, joinedload, defer, undefer, load_only
 from src.models.curriculum import Curriculum
 from src.models.course import Course
 from src.models.program import Program
 from src.models.user import User
-from src.models.curriculum import CurriculumCourse as curriculum_course
+from src.models.curriculum import CurriculumCourse
 from src.schema.curriculum import CurriculumResponse
 from src.services.base import BaseService
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -47,14 +47,13 @@ class CurriculumService(BaseService):
                     .join(subquery, and_(self.model.program_id == subquery.c.program_id,
                                          self.model.id == subquery.c.latest_curriculum_id))
                     .options(
-                        selectinload(Curriculum.courses).options(selectinload(curriculum_course.course),),
+                        selectinload(Curriculum.courses).options(selectinload(CurriculumCourse.course),),
                         selectinload(Curriculum.program).options(selectinload(Program.template),
                                  ),
 
                     )
                 )
             ).scalars().all()
-
 
             if not main_curriculums:
                 raise HTTPException(status_code=404, detail=f"No main curriculums found for the year {year}")
@@ -65,9 +64,7 @@ class CurriculumService(BaseService):
             main_curr['courses'] = main_curr.get("courses", {})
             main_curr.pop("program")
 
-
             return main_curr
-
 
         async def get_all(self, year: str = "2024", program_id: str = None, user_id: str = None):
             query = (
@@ -75,20 +72,118 @@ class CurriculumService(BaseService):
                 .filter(self.model.year == year, self.model.created_by == user_id)
                 .options(
                     selectinload(Curriculum.program).options(selectinload(Program.template)),
-                    selectinload(Curriculum.courses).options(selectinload(curriculum_course.course)),
+                    selectinload(Curriculum.courses).options(selectinload(CurriculumCourse.course)),
                     selectinload(Curriculum.user).options(defer(User.password)),
 
                 )
             )
             if program_id:
                 query = query.filter(self.model.program_id == program_id)
-            curriculums = await self.db.execute(query)
-            curriculums = curriculums.scalars().all()
-            if not curriculums:
+            curriculums_execute = await self.db.execute(query)
+            curriculums_result = curriculums_execute.scalars().all()
+            if not curriculums_result:
                 raise HTTPException(status_code=404, detail=f"No curriculums found for the year {year} and program")
-            return [curriculum.__dict__ for curriculum in curriculums]
 
+            curriculums = [curriculum.__dict__ for curriculum in curriculums_result]
+            for curriculum in curriculums:
+                curriculum['program_title'] = curriculum.get("program", {}).title
+                curriculum['semester_count'] = curriculum.get("program", {}).template.semester_count
+                # curriculums.pop("program")
 
+            return curriculums
+
+        async def get_curriculum_by_id(self, curriculum_id: str = None, user_id: str = None):
+            query = (
+                select(self.model)
+                .filter(self.model.id == curriculum_id, self.model.created_by == user_id)
+                .options(
+                    selectinload(Curriculum.program).options(selectinload(Program.template), selectinload(Program.degree)),
+                    selectinload(Curriculum.courses).options(selectinload(CurriculumCourse.course)),
+                    selectinload(Curriculum.user).options(defer(User.password)),
+
+                )
+            )
+
+            curriculum_execute = await self.db.execute(query)
+            curriculum_result = curriculum_execute.scalar()
+            if not curriculum_result:
+                raise HTTPException(status_code=404, detail=f"No curriculum found")
+
+            curriculum = curriculum_result.__dict__
+
+            curriculum['program_title'] = curriculum.get("program", {}).title
+            curriculum['semester_count'] = curriculum.get("program", {}).template.semester_count
+            curriculum['degree_name'] = curriculum.get("program", {}).degree.name
+                # curriculums.pop("program")
+
+            return curriculum
+
+        async def get_all_curriculums_by_program(self, year: str = "2024", program_id: str = None, user_id: str = None):
+            query = (
+                select(self.model)
+                .filter(self.model.year == year, self.model.created_by == user_id)
+                .options(
+                    selectinload(Curriculum.program).options(undefer(Program.title), selectinload(Program.degree)),
+                    selectinload(Curriculum.user).options(load_only("first_name", "last_name")),
+
+                )
+            )
+            if program_id:
+                query = query.filter(self.model.program_id == program_id)
+            curriculums_execute = await self.db.execute(query)
+            curriculums_result = curriculums_execute.scalars().all()
+            if not curriculums_result:
+                raise HTTPException(status_code=404, detail=f"No curriculums found for the year {year} and program")
+
+            curriculums = [curriculum.__dict__ for curriculum in curriculums_result]
+            for curriculum in curriculums:
+                curriculum['program_title'] = curriculum.get("program", {}).title
+                curriculum['degree_name'] = curriculum.get("program", {}).degree.name
+                curriculum.pop("program")
+            return curriculums
+
+        async def update_curriculum(self, courses: List[dict] = None, curriculum_id: str = None,  user_id: str = None):
+            curriculum = await self.db.execute(
+                select(self.model)
+                .options(selectinload(Curriculum.courses)
+                         .options(selectinload(CurriculumCourse.course)),)
+                .where(self.model.id == curriculum_id)
+            )
+            curriculum = curriculum.scalars().first()
+            if not curriculum:
+                raise HTTPException(status_code=404, detail="Curriculum not found")
+            print("ejnfkfnrdgjjjjj", curriculum.courses)
+            curriculum.courses = []
+
+            for course_info in courses:
+                course_id = course_info.get("course_id")
+                semester = course_info.get("semester")
+                order_in_semester = course_info.get("order_in_semester")
+
+                if not course_id:
+                    raise HTTPException(status_code=400, detail="Missing course_id in courses_info")
+                if not semester:
+                    raise HTTPException(status_code=400, detail="Missing semester in courses_info")
+                if not order_in_semester:
+                    raise HTTPException(status_code=400, detail="Missing order_in_semester in courses_info")
+                # course = await self.db.execute(select(Course).filter(Course.id == course_info.get("course_id")))
+                # course = course.scalars().first()
+                # print("ejnfkfnrjjjjj", course)
+                # if not course:
+                #     raise HTTPException(status_code=404, detail=f"Course with ID {course_id} not found")
+                curriculum_course = CurriculumCourse(
+                    curriculum_id=curriculum_id,
+                    course_id=course_id,
+                    semester=semester,
+                    order_in_semester=order_in_semester
+                )
+
+                # Add the new instance to the curriculum's courses
+                curriculum.courses.append(curriculum_course)
+
+            # Commit changes
+            await self.db.commit()
+            return {"message": "Curriculum courses updated successfully"}
 
 
 @lru_cache()

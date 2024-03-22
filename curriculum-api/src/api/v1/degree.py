@@ -4,7 +4,6 @@ from src.services.degree import get_degree_service, DegreeService
 from fastapi.security import HTTPBearer
 from src.utils.jwt import TokenData, get_current_active_user
 from typing import Annotated
-from src.utils.pagination import PaginationResponse, Pagination
 
 
 router = APIRouter(prefix="/degree", tags=["degree"])
@@ -17,14 +16,13 @@ async def degree_create(form_data: DegreeCreate, current_user: Annotated[TokenDa
                       degree_service: DegreeService = Depends(get_degree_service)):
     return await degree_service.create_object(form_data)
 
-@router.get('/list_degree_by', response_model=PaginationResponse)
-async def degree_list_by(pagination: Annotated[Pagination, Depends()],
-                       current_user: Annotated[TokenData, Depends(get_current_active_user)],
+@router.get('/list_degree_by')
+async def degree_list_by(current_user: Annotated[TokenData, Depends(get_current_active_user)],
                        filter_params: Annotated[DegreeFilter, Depends()],
                       degree_service: DegreeService = Depends(get_degree_service)):
     filter_params.faculty_id = current_user.faculty_id
     print("allllllllllllllllllllllll", filter_params)
-    return await degree_service.get_all_with_pagination(pagination, filter_params)
+    return await degree_service.get_all_with_pagination(filter_params)
 
 
 @router.delete('/delete_degree', status_code=status.HTTP_204_NO_CONTENT)

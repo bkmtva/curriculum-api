@@ -4,7 +4,6 @@ from src.services.faculty import get_faculty_service, FacultyService
 from fastapi.security import HTTPBearer
 from src.utils.jwt import TokenData, get_current_active_user
 from typing import Annotated
-from src.utils.pagination import PaginationResponse, Pagination
 
 router = APIRouter(prefix="/faculty", tags=["faculty"])
 
@@ -17,11 +16,11 @@ async def faculty_create(form_data: FacultyCreate, current_user: Annotated[Token
     return await faculty_service.create_object(form_data)
 
 
-@router.get('/get_all_faculties', response_model=PaginationResponse)
-async def faculty_list(pagination: Annotated[Pagination, Depends()],
+@router.get('/get_all_faculties')
+async def faculty_list(
                        current_user: Annotated[TokenData, Depends(get_current_active_user)],
                       faculty_service: FacultyService = Depends(get_faculty_service)):
-    return await faculty_service.get_all_with_pagination(pagination)
+    return await faculty_service.get_all_with_pagination()
 
 
 @router.delete('/delete_faculty', status_code=status.HTTP_204_NO_CONTENT)

@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSON
 from src.models.base import Base, UUIDMixin
@@ -16,7 +16,9 @@ class CurriculumCourse(Base):
 
     curriculum = relationship("Curriculum", back_populates="courses")
     course = relationship("Course", back_populates="curriculums")
-
+    __table_args__ = (
+        UniqueConstraint('curriculum_id', 'semester', 'order_in_semester', name='_curriculum_course_uc'),
+    )
 
 class Curriculum(UUIDMixin, Base):
     __tablename__ = "tbl_curriculum"
