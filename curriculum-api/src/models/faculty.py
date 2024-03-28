@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship
-from src.models.base import Base, UUIDMixin
+from src.models.base import Base, UUIDMixin, CreatedUpdatedMixin
 from src.models.degree import Degree
 
 

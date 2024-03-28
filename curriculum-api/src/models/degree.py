@@ -1,7 +1,7 @@
 import sqlalchemy as sa
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
-from src.models.base import Base, UUIDMixin
+from src.models.base import Base, UUIDMixin, CreatedUpdatedMixin
 from sqlalchemy.dialects.postgresql import UUID
 from src.models.program import Program
 

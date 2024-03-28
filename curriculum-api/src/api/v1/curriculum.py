@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Response
 from src.schema.curriculum import CurriculumRequest, CurriculumCreate, CurriculumResponse, CurriculumFilter
 from src.services.curriculum import get_curriculum_service, CurriculumService
 from fastapi.security import HTTPBearer
 from src.utils.jwt import TokenData, get_current_active_user
 from typing import Annotated, List
-
 router = APIRouter(prefix="/curriculum", tags=["curriculum"])
 
 oauth2_scheme = HTTPBearer()
@@ -72,6 +71,26 @@ async def curriculum_delete(curriculum_id: str,
                          current_user: Annotated[TokenData, Depends(get_current_active_user)],
                          curriculum_service: CurriculumService = Depends(get_curriculum_service)):
     return await curriculum_service.delete_by_id(curriculum_id)
+
+
+@router.get('/download_curriculum')
+async def curriculum_download(curriculum_id: str, current_user: Annotated[TokenData, Depends(get_current_active_user)],
+                         curriculum_service: CurriculumService = Depends(get_curriculum_service)):
+    excel_file_path = "/app/exel_files/cur3.xlsx"
+    with open(excel_file_path, "rb") as file:
+        content = file.read()
+    response = Response(content=content)
+    response.headers["Content-Disposition"] = "attachment; filename=existing_file.xlsx"
+    response.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+    return response
+
+
+@router.put('/set_main_curriculum')
+async def set_main_curriculum(curriculum_id: str, current_user: Annotated[TokenData, Depends(get_current_active_user)],
+                         curriculum_service: CurriculumService = Depends(get_curriculum_service)):
+
+    return await curriculum_service.set_as_main(curriculum_id)
 
 # @router.get("/curriculum-info", response_model=CurriculumResponse)
 # async def get_current_curriculum(current_user: Annotated[TokenData, Depends(get_current_active_user)],

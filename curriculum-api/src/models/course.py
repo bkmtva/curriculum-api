@@ -2,7 +2,7 @@ import sqlalchemy as sa
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
-from src.models.base import Base, UUIDMixin
+from src.models.base import Base, UUIDMixin, CreatedUpdatedMixin
 # from src.models.user import User
 # from src.models.association import curriculum_course
 # from src.models.curriculum import Curriculum

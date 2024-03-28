@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 from sqlalchemy import ForeignKey
-from src.models.base import Base, UUIDMixin
+from src.models.base import Base, UUIDMixin, CreatedUpdatedMixin
 from datetime import datetime
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID

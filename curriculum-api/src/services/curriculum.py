@@ -18,7 +18,7 @@ from src.schema.curriculum import CurriculumResponse
 from src.services.base import BaseService
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import select, func, and_, desc
+from sqlalchemy import select, func, and_, desc, delete, update
 from fastapi import HTTPException, status
 
 
@@ -112,8 +112,10 @@ class CurriculumService(BaseService):
             curriculum = curriculum_result.__dict__
 
             curriculum['program_title'] = curriculum.get("program", {}).title
+            # curriculum['program_id'] = curriculum.get("program", {}).id
             curriculum['semester_count'] = curriculum.get("program", {}).template.semester_count
             curriculum['degree_name'] = curriculum.get("program", {}).degree.name
+            curriculum.pop('program')
                 # curriculums.pop("program")
 
             return curriculum
@@ -136,11 +138,18 @@ class CurriculumService(BaseService):
                 raise HTTPException(status_code=404, detail=f"No curriculums found for the year {year} and program")
 
             curriculums = [curriculum.__dict__ for curriculum in curriculums_result]
+            program_title = ''
+            degree_name = ''
             for curriculum in curriculums:
-                curriculum['program_title'] = curriculum.get("program", {}).title
-                curriculum['degree_name'] = curriculum.get("program", {}).degree.name
+                program_title = curriculum.get("program", {}).title
+                degree_name = curriculum.get("program", {}).degree.name
+                curriculum['program_title'] = program_title
+                curriculum['degree_name'] = degree_name
                 curriculum.pop("program")
-            return curriculums
+            program = {'program_title': program_title, 'degree_name': degree_name}
+            all_currilims = {'curriculums': curriculums, 'program': program}
+
+            return all_currilims
 
         async def update_curriculum(self, courses: List[dict] = None, curriculum_id: str = None,  user_id: str = None):
             curriculum = await self.db.execute(
@@ -152,8 +161,8 @@ class CurriculumService(BaseService):
             curriculum = curriculum.scalars().first()
             if not curriculum:
                 raise HTTPException(status_code=404, detail="Curriculum not found")
-            print("ejnfkfnrdgjjjjj", curriculum.courses)
-            curriculum.courses = []
+
+            await self.db.execute(delete(CurriculumCourse).where(CurriculumCourse.curriculum_id == curriculum.id))
 
             for course_info in courses:
                 course_id = course_info.get("course_id")
@@ -161,16 +170,16 @@ class CurriculumService(BaseService):
                 order_in_semester = course_info.get("order_in_semester")
 
                 if not course_id:
-                    raise HTTPException(status_code=400, detail="Missing course_id in courses_info")
+                    raise HTTPException(status_code=400, detail="Missing course_id")
                 if not semester:
-                    raise HTTPException(status_code=400, detail="Missing semester in courses_info")
+                    raise HTTPException(status_code=400, detail="Missing semester")
                 if not order_in_semester:
-                    raise HTTPException(status_code=400, detail="Missing order_in_semester in courses_info")
-                # course = await self.db.execute(select(Course).filter(Course.id == course_info.get("course_id")))
-                # course = course.scalars().first()
-                # print("ejnfkfnrjjjjj", course)
-                # if not course:
-                #     raise HTTPException(status_code=404, detail=f"Course with ID {course_id} not found")
+                    raise HTTPException(status_code=400, detail="Missing order_in_semester")
+                course = await self.db.execute(select(Course).filter(Course.id == course_info.get("course_id")))
+                course = course.scalars().first()
+
+                if not course:
+                    raise HTTPException(status_code=404, detail=f"Course with ID {course_id} not found")
                 curriculum_course = CurriculumCourse(
                     curriculum_id=curriculum_id,
                     course_id=course_id,
@@ -184,6 +193,29 @@ class CurriculumService(BaseService):
             # Commit changes
             await self.db.commit()
             return {"message": "Curriculum courses updated successfully"}
+
+        async def set_as_main(self, curriculum_id: str):
+
+            result = await self.db.execute(select(self.model).filter(self.model.id == curriculum_id))
+            curriculum = result.scalars().first()
+            if not curriculum:
+                raise HTTPException(status_code=404, detail="Curriculum not found")
+
+            # Update the target curriculum to be main
+            curriculum.is_main = True
+
+            # Reset other curriculums in the same program, user, and year to False
+            await self.db.execute(
+                update(Curriculum).filter(
+                    Curriculum.program_id == curriculum.program_id,
+                    Curriculum.created_by == curriculum.created_by,
+                    Curriculum.year == curriculum.year,
+                    Curriculum.id != curriculum_id
+                ).values(is_main=False)
+            )
+
+            await self.db.commit()
+            return {"message": f"Curriculum {curriculum.title} set as main successfully"}
 
 
 @lru_cache()

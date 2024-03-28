@@ -20,4 +20,3 @@ async def get_db() -> AsyncSession:
     # return db
     async with SessionDB() as db:
         yield db
-    
