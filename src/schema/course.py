@@ -10,10 +10,10 @@ from typing import Optional
 from src.schema.template import TemplateResponse
 from src.schema.degree import DegreeResponse
 # from src.schema.curriculum import CurriculumResponse
-
-
-class CourseCreate(BaseModel):
+class CourseInfo(BaseModel):
     title: str = ""
+    title_kz: str = ""
+    title_ru: str = ""
     course_code: str = ''
     teor: Optional[int] = None
     pr: str = ''
@@ -21,6 +21,10 @@ class CourseCreate(BaseModel):
     ects: Optional[int] = None
     term: Optional[str] = None
     user_id: Optional[Union[UUID4, str]] = ''
+
+class CourseCreate(CourseInfo):
+    sub_ids: Optional[List[UUID4]] = None
+    pre_ids: Optional[List[UUID4]] = None
 
     class Config:
         from_attributes = True

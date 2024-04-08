@@ -1,3 +1,4 @@
+import logging
 from functools import lru_cache
 
 from elasticsearch import AsyncElasticsearch
@@ -9,15 +10,56 @@ from src.db.database import get_db
 from src.db.elastic import get_elastic
 from src.db.redis import get_redis
 
-from src.models.course import Course
-from src.schema.course import CourseResponse
+from src.models.course import Course, Prerequisite, Subcourse
+from src.schema.course import CourseResponse, CourseInfo
 from src.services.base import BaseService
+from sqlalchemy.future import select
+logger = logging.getLogger(__name__)
 
 
 class CourseService(BaseService):
     model = Course
     schema = CourseResponse
     service_name = 'course'
+    search_fields = ['title', 'course_code']
+    relationship_options = {
+        'pre_ids': {
+            'model': Course,
+            'schema': CourseInfo,
+            'field': 'prerequisites'
+        },
+        'sub_ids': {
+            'model': Course,
+            'schema': CourseInfo,
+            'field': 'subcourses'
+        }
+    }
+
+    async def create_object(self, obj_sch):
+        others = {}
+        obj_dict = obj_sch.dict()
+        for key, value in self.relationship_options.items():
+            others[value['field']] = await self._set_obj_ids(obj_dict.pop(key), value['model'])
+        db_obj = self.model(**obj_dict)
+        print("mgklermgkermg", others)
+        logger.info(others)
+        for key, value in others.items():
+            setattr(db_obj, key, value)
+        self.db.add(db_obj)
+        await self.db_commit()
+        await self.db.refresh(db_obj)
+        # if self.detail_schema:
+        #     return await self._get_object_from_db(db_obj.id)
+        return db_obj
+
+    async def _set_obj_ids(self, obj_ids, mdl):
+        if obj_ids is None:
+            obj_ids = []
+        print("Setting object IDs: %s", obj_ids)
+        objs = (await self.db.execute(select(mdl).filter(mdl.id.in_(obj_ids)))).scalars()
+        print("objects here: %s",  objs, mdl, objs)
+
+        return [obj for obj in objs]
 
 
 @lru_cache()
