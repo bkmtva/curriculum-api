@@ -9,16 +9,17 @@ import uuid
 from typing import Optional
 from src.schema.template import TemplateResponse
 from src.schema.degree import DegreeResponse
+# from src.schema.curriculum import CurriculumResponse
 
 
 class CourseCreate(BaseModel):
     title: str = ""
     course_code: str = ''
-    teor: str = ''
+    teor: Optional[int] = None
     pr: str = ''
-    cr: str = ''
-    ects: str = ''
-    term: str = ''
+    cr: Optional[int] = None
+    ects: Optional[int] = None
+    term: Optional[str] = None
     user_id: Optional[Union[UUID4, str]] = ''
 
     class Config:
@@ -31,6 +32,34 @@ class CourseCreate(BaseModel):
 class CourseResponse(CourseCreate):
     id: Optional[UUID4] or Optional[str] or Optional[None] = None
 
+
+class CurriculumCourseResponse(BaseModel):
+    order_in_semester: int = 1
+    semester: int = 1
+    curriculum_id: Optional[Union[UUID4, str]] = ''
+    course_id: Optional[Union[UUID4, str]] = ''
+    user_id: Optional[Union[UUID4, str]] = ''
+    course: CourseResponse
+
+    class Config:
+        orm_mode = True
+        from_attributes = True
+        json_loads = orjson.loads
+        json_dumps = orjson_dumps
+
+    @classmethod
+    def from_orm(cls, curriculumcourse_orm):
+        # curriculum_response = CurriculumResponse.from_orm(curriculumcourse_orm.curriculum)
+        course_response = CourseResponse.from_orm(curriculumcourse_orm.course)
+
+        return cls(
+            curriculum_id=curriculumcourse_orm.curriculum_id,
+            course_id=curriculumcourse_orm.course_id,
+            semester=curriculumcourse_orm.semester,
+            order_in_semester=curriculumcourse_orm.order_in_semester,
+            # curriculum=curriculum_response,
+            course=course_response,
+        )
 
 class CourseRequest(BaseModel):
     id: UUID4 or str

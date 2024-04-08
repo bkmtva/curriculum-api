@@ -3,6 +3,7 @@ from src.schema.curriculum import CurriculumRequest, CurriculumCreate, Curriculu
 from src.services.curriculum import get_curriculum_service, CurriculumService
 from fastapi.security import HTTPBearer
 from src.utils.jwt import TokenData, get_current_active_user
+from src.excel_files.to_excel import to_excel
 from typing import Annotated, List
 router = APIRouter(prefix="/curriculum", tags=["curriculum"])
 
@@ -76,7 +77,11 @@ async def curriculum_delete(curriculum_id: str,
 @router.get('/download_curriculum')
 async def curriculum_download(curriculum_id: str, current_user: Annotated[TokenData, Depends(get_current_active_user)],
                          curriculum_service: CurriculumService = Depends(get_curriculum_service)):
-    excel_file_path = "/app/exel_files/cur3.xlsx"
+    user_id = current_user.user_id
+    currciculum = await curriculum_service.get_curriculum(user_id=user_id, curriculum_id=curriculum_id)
+    print(currciculum)
+    to_excel(currciculum)
+    excel_file_path = "src/excel_files/curriculum.xlsx"
     with open(excel_file_path, "rb") as file:
         content = file.read()
     response = Response(content=content)

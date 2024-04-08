@@ -4,7 +4,7 @@ from src.models.base import Base, UUIDMixin, CreatedUpdatedMixin
 from src.models.degree import Degree
 
 
-class Faculty(UUIDMixin, Base):
+class Faculty(UUIDMixin,  CreatedUpdatedMixin, Base):
     __tablename__ = "tbl_faculty"
 
     title = sa.Column(sa.String(300))

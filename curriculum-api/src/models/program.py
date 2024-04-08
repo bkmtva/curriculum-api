@@ -7,7 +7,7 @@ from src.models.curriculum import Curriculum
 from src.models.template import Template
 
 
-class Program(UUIDMixin, Base):
+class Program(UUIDMixin, CreatedUpdatedMixin, Base):
     __tablename__ = "tbl_program"
 
     title = sa.Column(sa.String(300))

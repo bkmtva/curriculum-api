@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from src.models.faculty import Faculty
 
 
-class User(UUIDMixin, Base):
+class User(UUIDMixin, CreatedUpdatedMixin, Base):
     __tablename__ = "tbl_user"
 
     first_name = sa.Column(sa.String(255))
@@ -15,7 +15,7 @@ class User(UUIDMixin, Base):
     password = sa.Column(sa.String(255), nullable=False)
     email = sa.Column(sa.String(255), nullable=False, unique=True)
     profile_image = sa.Column(sa.String(255))
-    created_at = sa.Column(sa.DateTime, default=datetime.utcnow, nullable=False)
+    # created_at = sa.Column(sa.DateTime, default=datetime.utcnow, nullable=False)
     last_login_at = sa.Column(sa.DateTime)
     is_active = sa.Column(sa.Boolean, default=True)
     is_superuser = sa.Column(sa.Boolean, default=False)

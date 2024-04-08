@@ -20,7 +20,7 @@ ELASTIC_PORT = int(os.getenv('ELASTIC_PORT', 9200))
 # Корень проекта
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-DATABASE_URL = os.getenv('DATABASE_URL', os.getenv('ASYNC_DATABASE_URL'))
+DATABASE_URL = os.getenv('ASYNC_DATABASE_URL')
 
 SECRET_KEY = "83daa0256a2289b0fb23693bf1f6034d44396675749244721a2b20e896e11662"
 ALGORITHM = "HS256"

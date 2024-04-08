@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from src.models.program import Program
 
 
-class Degree(UUIDMixin, Base):
+class Degree(UUIDMixin, CreatedUpdatedMixin, Base):
     __tablename__ = "tbl_degree"
 
     name = sa.Column(sa.String(300))

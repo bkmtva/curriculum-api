@@ -9,9 +9,9 @@ from src.models.faculty import Faculty
 from src.models.degree import Degree
 from src.models.program import Program
 from src.models.template import Template
-from src.models.curriculum import Curriculum
-from src.models.course import Course
-from src.models.association import curriculum_course
+from src.models.curriculum import Curriculum, CurriculumCourse
+from src.models.course import Course, Subcourse, Prerequisite
+
 
 logging_config.dictConfig(LOGGING)
 

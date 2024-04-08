@@ -4,7 +4,7 @@ from src.models.base import Base, UUIDMixin, CreatedUpdatedMixin
 # from src.models.program import Program
 
 
-class Template(UUIDMixin, Base):
+class Template(UUIDMixin, CreatedUpdatedMixin, Base):
     __tablename__ = "tbl_template"
 
     title = sa.Column(sa.String(300))

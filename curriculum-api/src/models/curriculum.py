@@ -6,7 +6,7 @@ from src.models.base import Base, UUIDMixin, CreatedUpdatedMixin
 from src.models.course import Course
 # from src.models.association import curriculum_course
 # from src.models.user import User
-class CurriculumCourse(Base):
+class CurriculumCourse(UUIDMixin, CreatedUpdatedMixin, Base):
     __tablename__ = 'curriculum_course'
 
     curriculum_id = sa.Column(UUID(as_uuid=True), ForeignKey("tbl_curriculum.id", ondelete='CASCADE'), primary_key=True)
@@ -20,7 +20,7 @@ class CurriculumCourse(Base):
         UniqueConstraint('curriculum_id', 'semester', 'order_in_semester', name='_curriculum_course_uc'),
     )
 
-class Curriculum(UUIDMixin, Base):
+class Curriculum(UUIDMixin, CreatedUpdatedMixin, Base):
     __tablename__ = "tbl_curriculum"
 
     title = sa.Column(sa.String(300))
@@ -43,7 +43,7 @@ class Curriculum(UUIDMixin, Base):
 
 
 
-class CurriculumEditHistory(UUIDMixin, Base):
+class CurriculumEditHistory(UUIDMixin, CreatedUpdatedMixin, Base):
     __tablename__ = "tbl_cutticulum_edit_history"
 
     title = sa.Column(sa.String(300))

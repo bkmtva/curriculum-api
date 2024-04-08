@@ -9,7 +9,7 @@ import uuid
 from typing import Optional
 from src.schema.program import ProgramResponse
 from src.schema.user import UserResponse
-from src.schema.course import CourseResponse
+from src.schema.course import CurriculumCourseResponse
 
 # from src.models.program import Program
 
@@ -23,6 +23,8 @@ class CurriculumCreate(BaseModel):
     class Config:
         json_loads = orjson.loads
         json_dumps = orjson_dumps
+
+
 
 # class ProgramResponse(BaseModel):
 #     id: UUID4
@@ -47,7 +49,7 @@ class CurriculumResponse(BaseModel):
     created_by: UUID4 or str
     program: ProgramResponse
     user: UserResponse
-    courses: List[CourseResponse]
+    courses: List[CurriculumCourseResponse]
 
     class Config:
         orm_mode = True
@@ -59,7 +61,7 @@ class CurriculumResponse(BaseModel):
     def from_orm(cls, curriculum_orm):
         program_response = ProgramResponse.from_orm(curriculum_orm.program)
         user_response = UserResponse.from_orm(curriculum_orm.user)
-        courses_response = [CourseResponse.from_orm(course) for course in curriculum_orm.courses]
+        courses_response = [CurriculumCourseResponse.from_orm(course) for course in curriculum_orm.courses]
 
         return cls(
             id=curriculum_orm.id,
@@ -72,6 +74,12 @@ class CurriculumResponse(BaseModel):
             user=user_response,
             courses=courses_response,
         )
+
+
+class CurriculumSchema(CurriculumResponse):
+    program_title: str = ''
+    semester_count: int = 8
+    degree_name: str = ''
 
 
 class CurriculumRequest(BaseModel):

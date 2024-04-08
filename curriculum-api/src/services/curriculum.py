@@ -14,13 +14,13 @@ from src.models.course import Course
 from src.models.program import Program
 from src.models.user import User
 from src.models.curriculum import CurriculumCourse
-from src.schema.curriculum import CurriculumResponse
+from src.schema.curriculum import CurriculumResponse, CurriculumSchema
 from src.services.base import BaseService
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import select, func, and_, desc, delete, update
 from fastapi import HTTPException, status
-
+import json
 
 class CurriculumService(BaseService):
         model = Curriculum
@@ -119,6 +119,51 @@ class CurriculumService(BaseService):
                 # curriculums.pop("program")
 
             return curriculum
+
+
+        async def get_curriculum(self, curriculum_id: str = None, user_id: str = None):
+            query = (
+                select(self.model)
+                .filter(self.model.id == curriculum_id, self.model.created_by == user_id)
+                .options(
+                    selectinload(Curriculum.program).options(selectinload(Program.template), selectinload(Program.degree)),
+                    selectinload(Curriculum.courses).options(selectinload(CurriculumCourse.course)),
+                    selectinload(Curriculum.user).options(defer(User.password)),
+
+                )
+            )
+
+            curriculum_execute = await self.db.execute(query)
+            curriculum_result = curriculum_execute.scalar()
+            curriculum = CurriculumSchema.from_orm(curriculum_result)
+            if not curriculum_result:
+                raise HTTPException(status_code=404, detail=f"No curriculum found")
+
+            curriculum.program_title = curriculum.program.title
+            curriculum.semester_count = curriculum.program.template.semester_count
+            curriculum.degree_name = curriculum.program.degree.name
+
+            return curriculum.json()
+
+        async def todict(self, obj, classkey=None):
+            # if isinstance(obj, dict):
+            #     data = {}
+            #     for (k, v) in obj.items():
+            #         data[k] = todict(v, classkey)
+            #     return data
+            if hasattr(obj, "_ast"):
+                return todict(obj._ast())
+            elif hasattr(obj, "__iter__") and not isinstance(obj, str):
+                return [todict(v, classkey) for v in obj]
+            elif hasattr(obj, "__dict__"):
+                data = dict([(key, todict(value, classkey))
+                             for key, value in obj.__dict__.items()
+                             if not callable(value) and not key.startswith('_')])
+                if classkey is not None and hasattr(obj, "__class__"):
+                    data[classkey] = obj.__class__.__name__
+                return data
+            else:
+                return obj
 
         async def get_all_curriculums_by_program(self, year: str = "2024", program_id: str = None, user_id: str = None):
             query = (
