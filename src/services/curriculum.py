@@ -143,7 +143,7 @@ class CurriculumService(BaseService):
             curriculum.semester_count = curriculum.program.template.semester_count
             curriculum.degree_name = curriculum.program.degree.name
 
-            return curriculum.json()
+            return curriculum
 
         async def todict(self, obj, classkey=None):
             # if isinstance(obj, dict):

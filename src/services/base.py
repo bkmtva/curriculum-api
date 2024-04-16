@@ -17,9 +17,10 @@ class BaseService(ABC):
     service_name: str
     model = None
     schema = None
+    detail_schema = None
     OBJECT_CACHE_EXPIRE_IN_SECONDS = 60 * 5
     search_fields = []
-
+    relationship_options = {}
     def __init__(self, redis: Redis, elastic: AsyncElasticsearch, db: AsyncSession):
         self.redis = redis
         self.elastic = elastic
@@ -36,11 +37,24 @@ class BaseService(ABC):
         db_obj = await self._get_object_from_db(obj_id)
         if not db_obj:
             raise HTTPException(status_code=404, detail="Object not found")
+        for key, value in self.relationship_options.items():
+            if getattr(obj_sch, key) is not None:
+                setattr(db_obj, value['field'], await self._set_obj_ids(getattr(obj_sch, key), value['model']))
         await self._update_object_in_db(db_obj, obj_sch)
         await self.db.refresh(db_obj)
-        obj_sch = self.schema.model_validate(db_obj.__dict__)
+        if self.detail_schema:
+            obj_sch = self.detail_schema.model_validate(db_obj.__dict__)
+        else:
+            obj_sch = self.schema.model_validate(db_obj.__dict__)
         await self._put_object_to_cache(obj_sch)
         return obj_sch
+
+    async def _set_obj_ids(self, obj_ids, mdl):
+        if obj_ids is None:
+            return []
+        objs = (await self.db.execute(select(mdl).filter(mdl.id.in_(obj_ids)))).scalars()
+
+        return [obj for obj in objs]
 
     async def get_all(self):
         result = await self.db.execute(select(self.model))
@@ -62,7 +76,10 @@ class BaseService(ABC):
             db_obj = await self._get_object_from_db(obj_id)
             if not db_obj:
                 raise HTTPException(status_code=404, detail="Object not found")
-            db_obj = self.schema.model_validate(db_obj.__dict__)
+            if self.detail_schema:
+                db_obj = self.detail_schema.model_validate(db_obj.__dict__)
+            else:
+                db_obj = self.schema.model_validate(db_obj.__dict__)
             await self._put_object_to_cache(db_obj)
         return db_obj
 

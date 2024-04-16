@@ -5,13 +5,13 @@ from elasticsearch import AsyncElasticsearch
 from fastapi import Depends
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy.orm import selectinload
 from src.db.database import get_db
 from src.db.elastic import get_elastic
 from src.db.redis import get_redis
 
 from src.models.course import Course, Prerequisite, Subcourse
-from src.schema.course import CourseResponse, CourseInfo
+from src.schema.course import CourseResponse, CourseInfo, CourseDetailSchema
 from src.services.base import BaseService
 from sqlalchemy.future import select
 logger = logging.getLogger(__name__)
@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 class CourseService(BaseService):
     model = Course
     schema = CourseResponse
+    detail_schema = CourseDetailSchema
     service_name = 'course'
     search_fields = ['title', 'course_code']
     relationship_options = {
@@ -34,6 +35,12 @@ class CourseService(BaseService):
             'field': 'subcourses'
         }
     }
+
+    async def _get_object_from_db(self, obj_id):
+        return (await self.db.execute(select(Course).options(
+            selectinload(Course.prerequisites),
+            selectinload(Course.subcourses),
+        ).filter_by(id=obj_id))).scalar()
 
     async def create_object(self, obj_sch):
         others = {}
@@ -51,12 +58,7 @@ class CourseService(BaseService):
 
         return db_obj
 
-    async def _set_obj_ids(self, obj_ids, mdl):
-        if obj_ids is None:
-            return []
-        objs = (await self.db.execute(select(mdl).filter(mdl.id.in_(obj_ids)))).scalars()
 
-        return [obj for obj in objs]
 
 
 @lru_cache()

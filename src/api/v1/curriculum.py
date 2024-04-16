@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, status, Response
-from src.schema.curriculum import CurriculumRequest, CurriculumCreate, CurriculumResponse, CurriculumFilter
+from src.schema.curriculum import CurriculumRequest, CurriculumCreate, CurriculumResponse, CurriculumFilter, CurriculumSchema
 from src.services.curriculum import get_curriculum_service, CurriculumService
 from fastapi.security import HTTPBearer
 from src.utils.jwt import TokenData, get_current_active_user
@@ -52,14 +52,14 @@ async def get_all_curriculums_by_program(
 
 
 
-@router.get('/get_curriculum_by_id')
+@router.get('/get_curriculum_by_id', response_model=CurriculumSchema)
 async def curriculum_by_id(
         current_user: Annotated[TokenData, Depends(get_current_active_user)],
         curriculum_id: str,
         curriculum_service: CurriculumService = Depends(get_curriculum_service)
 ):
     user_id = current_user.user_id
-    return await curriculum_service.get_curriculum_by_id(user_id=user_id, curriculum_id=curriculum_id)
+    return await curriculum_service.get_curriculum(user_id=user_id, curriculum_id=curriculum_id)
 
 
 @router.get('/main_curriculum_by_program')
@@ -79,13 +79,14 @@ async def curriculum_download(curriculum_id: str, current_user: Annotated[TokenD
                          curriculum_service: CurriculumService = Depends(get_curriculum_service)):
     user_id = current_user.user_id
     currciculum = await curriculum_service.get_curriculum(user_id=user_id, curriculum_id=curriculum_id)
-    print(currciculum)
-    to_excel(currciculum)
-    excel_file_path = "src/excel_files/curriculum.xlsx"
+    print(type(currciculum), "typeeeeee")
+    curr = currciculum.json()
+    file_name = to_excel(curr)
+    excel_file_path = f"src/excel_files/{file_name}"
     with open(excel_file_path, "rb") as file:
         content = file.read()
     response = Response(content=content)
-    response.headers["Content-Disposition"] = "attachment; filename=existing_file.xlsx"
+    response.headers["Content-Disposition"] = f"attachment; filename=curriculum.xlsx"
     response.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
     return response

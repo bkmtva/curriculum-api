@@ -22,6 +22,7 @@ class CourseInfo(BaseModel):
     term: Optional[str] = None
     user_id: Optional[Union[UUID4, str]] = ''
 
+
 class CourseCreate(CourseInfo):
     sub_ids: Optional[List[str]] = None
     pre_ids: Optional[List[str]] = None
@@ -33,8 +34,19 @@ class CourseCreate(CourseInfo):
 
 
 
-class CourseResponse(CourseCreate):
+class CourseResponse(CourseInfo):
     id: Optional[UUID4] or Optional[str] or Optional[None] = None
+    class Config:
+        from_attributes = True
+
+class CourseDetailSchema(CourseResponse):
+    prerequisites: Optional[List[CourseResponse]] = None
+    subcourses: Optional[List[CourseResponse]] = None
+
+    class Config:
+        from_attributes = True
+        json_loads = orjson.loads
+        json_dumps = orjson_dumps
 
 
 class CurriculumCourseResponse(BaseModel):
@@ -64,6 +76,7 @@ class CurriculumCourseResponse(BaseModel):
             # curriculum=curriculum_response,
             course=course_response,
         )
+
 
 class CourseRequest(BaseModel):
     id: UUID4 or str
