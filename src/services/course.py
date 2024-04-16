@@ -48,16 +48,13 @@ class CourseService(BaseService):
         self.db.add(db_obj)
         await self.db_commit()
         await self.db.refresh(db_obj)
-        # if self.detail_schema:
-        #     return await self._get_object_from_db(db_obj.id)
+
         return db_obj
 
     async def _set_obj_ids(self, obj_ids, mdl):
         if obj_ids is None:
-            obj_ids = []
-        print("Setting object IDs: %s", obj_ids)
+            return []
         objs = (await self.db.execute(select(mdl).filter(mdl.id.in_(obj_ids)))).scalars()
-        print("objects here: %s",  objs, mdl, objs)
 
         return [obj for obj in objs]
 

@@ -23,8 +23,8 @@ class CourseInfo(BaseModel):
     user_id: Optional[Union[UUID4, str]] = ''
 
 class CourseCreate(CourseInfo):
-    sub_ids: Optional[List[UUID4]] = None
-    pre_ids: Optional[List[UUID4]] = None
+    sub_ids: Optional[List[str]] = None
+    pre_ids: Optional[List[str]] = None
 
     class Config:
         from_attributes = True

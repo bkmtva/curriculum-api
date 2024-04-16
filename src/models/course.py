@@ -27,8 +27,16 @@ class Course(UUIDMixin, CreatedUpdatedMixin,  Base):
     user = relationship("User", back_populates="courses")
 
     curriculums = relationship("CurriculumCourse", back_populates="course")
-    prerequisites = relationship("Prerequisite", foreign_keys="[Prerequisite.child_id]")
-    subcourses = relationship("Subcourse", foreign_keys="[Subcourse.parent_course_id]")
+    prerequisites = relationship("Course",
+                                 secondary="tbl_prerequisite",
+                                 primaryjoin="Course.id==Prerequisite.child_id",
+                                 secondaryjoin="Course.id==Prerequisite.prerequisit_id",
+                                 backref="required_by")
+    subcourses = relationship("Course",
+                              secondary="tbl_subcourse",
+                              primaryjoin="Course.id==Subcourse.parent_course_id",
+                              secondaryjoin="Course.id==Subcourse.subcourse_id",
+                              backref="parent_courses")
 
 
 class Prerequisite(UUIDMixin, Base):
