@@ -258,7 +258,7 @@ class UserService(BaseService):
         user = await self.get_user_by_email(email=password_reset_request.email)
         if user is None:
             raise credential_exception
-        access_token_expires = timedelta(minutes=60*15)
+        access_token_expires = timedelta(minutes=15)
         reset_token = await self.create_reset_token(data={"sub": {'email': user.email,}}, expires_delta=access_token_expires)
         await self.send_reset_email(password_reset_request.email, reset_token)
 
