@@ -48,7 +48,7 @@ class CourseService(BaseService):
         for key, value in self.relationship_options.items():
             others[value['field']] = await self._set_obj_ids(obj_dict.pop(key), value['model'])
         db_obj = self.model(**obj_dict)
-        print("mgklermgkermg", others)
+
         logger.info(others)
         for key, value in others.items():
             setattr(db_obj, key, value)

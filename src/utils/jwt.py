@@ -5,7 +5,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from pydantic import BaseModel
 
-from src.core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from src.core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, RESET_SECRET_KEY
 from src.utils.cache_db import auth_redis_db
 
 # Схема аутентификации OAuth2
@@ -20,6 +20,9 @@ class TokenData(BaseModel):
     email: str | None = None
     faculty_id: str | None = None
 
+class ResetTokenData(BaseModel):
+    email: str | None = None
+    reset_token: str | None = None
 
 # Функция проверки токена на наличие в черном списке
 async def is_token_blacklisted(jti: str = 'ghj') -> bool:
@@ -84,4 +87,26 @@ async def get_current_active_user(
     # Проверка на активность пользователя
     if token_data.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
+    return token_data
+
+
+async def get_current_reset_email(token: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        print(token)
+        payload = jwt.decode(token.credentials, RESET_SECRET_KEY, algorithms=[ALGORITHM], options={"verify_sub": False})
+        jti = payload.get("jti")
+        if await is_token_blacklisted(jti):
+            raise credentials_exception
+        subject = payload.get("sub")
+        if subject is None:
+            raise credentials_exception
+
+        token_data = ResetTokenData(email=subject['email'], reset_token=token.credentials)
+    except JWTError:
+        raise credentials_exception
     return token_data

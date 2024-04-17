@@ -23,11 +23,16 @@ from passlib.context import CryptContext
 from src.services.base import BaseService
 from fastapi.responses import JSONResponse
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-from src.core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_MINUTES
+from src.core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_MINUTES, RESET_SECRET_KEY
 # oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/auth/login")
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel, EmailStr
+from urllib.parse import urlencode
 
-
-class UserService:
+class UserService(BaseService):
     model = User
     schema = UserInDB
     service_name = 'user'
@@ -132,17 +137,17 @@ class UserService:
             self.OBJECT_CACHE_EXPIRE_IN_SECONDS
         )
 
-    async def _object_from_cache(self, email: str):
-        print('Get Object From Cache')
-        data = await self.redis.get(f'{self.service_name}_{email}')
-        if not data:
-            return None
-        data = self.schema.parse_raw(data)
-        return data
+    # async def _object_from_cache(self, email: str):
+    #     print('Get Object From Cache')
+    #     data = await self.redis.get(f'{self.service_name}_{email}')
+    #     if not data:
+    #         return None
+    #     data = self.schema.parse_raw(data)
+    #     return data
 
     async def get_user_by_email(self, email: str):
-        db_obj = await self._object_from_cache(email)
-        print(db_obj)
+        db_obj = None
+        # db_obj = await self._object_from_cache(email)
         if not db_obj:
             db_obj = await self._get_object_from_db(email)
             if not db_obj:
@@ -187,24 +192,24 @@ class UserService:
         )
         return result.scalars()
 
-    # async def verify_token(self, token: str):
-    #     credential_exception = HTTPException(
-    #         status_code=status.HTTP_401_UNAUTHORIZED,
-    #         detail="Token has expired",
-    #         headers={"WWW-Authenticate": "Bearer"}
-    #     )
-    #
-    #     try:
-    #         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_sub": False})
-    #         email: str = payload.get("sub")
-    #         if email is None:
-    #             raise credential_exception
-    #         token_data = TokenData(email=email)
-    #     except JWTError as e:
-    #         print(f"JWTError: {e}")
-    #         raise credential_exception
-    #
-    #     return token_data
+    async def verify_token(self, token: str):
+        credential_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+        try:
+            payload = jwt.decode(token, RESET_SECRET_KEY, algorithms=[ALGORITHM], options={"verify_sub": False})
+            email: str = payload.get("sub", {}).get('email')
+            if email is None:
+                raise credential_exception
+            return email
+        except JWTError as e:
+            print(f"JWTError: {e}")
+            raise credential_exception
+
+        return email
 
     async def refresh_access_token(self, refesh_data: str):
         # refesh_data = await self.verify_token(token.refresh_token)
@@ -232,6 +237,96 @@ class UserService:
         print(user.dict())
         return user_response
 
+    async def create_reset_token(self, data: dict, expires_delta: timedelta or None = None):
+        to_encode = data.copy()
+        if expires_delta:
+            expire = datetime.utcnow() + expires_delta
+        else:
+            expire = datetime.utcnow() + timedelta(minutes=15)
+
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(to_encode, RESET_SECRET_KEY, algorithm=ALGORITHM)
+        return encoded_jwt
+
+    async def send_email(self, password_reset_request):
+        credential_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate email",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+        user = await self.get_user_by_email(email=password_reset_request.email)
+        if user is None:
+            raise credential_exception
+        access_token_expires = timedelta(minutes=60*15)
+        reset_token = await self.create_reset_token(data={"sub": {'email': user.email,}}, expires_delta=access_token_expires)
+        await self.send_reset_email(password_reset_request.email, reset_token)
+
+
+        return {"message": "Password reset requested. Check your email for further instructions"}
+
+    async def send_reset_email(self, email: str, reset_token: str) -> None:
+        """
+        Send a reset password email to the user.
+        """
+        sender_email = "hokkaido.vi@gmail.com"  # Your email address
+        receiver_email = email
+        password = "cymw uxty uytg qczi"  # Your email password
+
+        message = MIMEMultipart("alternative")
+        message["Subject"] = "Password Reset"
+        message["From"] = sender_email
+        message["To"] = receiver_email
+
+        reset_link = f"http://49.13.154.79:3000/reset_password/{reset_token}"
+        text = f"""\
+            Hi,
+            To reset your password, click on the following link:
+            {reset_link}
+            If you didn't request a password reset, please ignore this email."""
+
+        html = f"""\
+            <html>
+              <body>
+                <p>Hi,<br>
+                   To reset your password, click on the following link:<br>
+                   <a href="{reset_link}">{reset_link}</a><br>
+                   If you didn't request a password reset, please ignore this email.
+                </p>
+              </body>
+            </html>
+            """
+
+        part1 = MIMEText(text, "plain")
+        part2 = MIMEText(html, "html")
+
+        message.attach(part1)
+        message.attach(part2)
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(sender_email, password)
+            server.sendmail(sender_email, receiver_email, message.as_string())
+
+    async def change_password(self, new_password_data, email):
+        credential_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate email",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        if new_password_data.new_password != new_password_data.repeat_new_password:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New passwords do not match")
+
+        user = await self.get_user_by_email(email=email)
+        if user is None:
+            raise credential_exception
+        new_password = await self._get_password_hash(new_password_data.new_password)
+        user.password = new_password
+        await self.update_object(str(user.email), user)
+        await self.get_user_by_email(email=email)
+
+
+        # await self.db.refresh(db_obj)
+        return {"message": "Password changed successfully!"}
 
 @lru_cache()
 def get_user_service(

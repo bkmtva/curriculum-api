@@ -13,7 +13,7 @@ class UserRequest(BaseModel):
     last_name: str or None = ""
     email: str
     profile_image: Optional[str] or None = ''
-    created_at: datetime = datetime.utcnow()
+    datetime_created: datetime = datetime.utcnow()
     last_login_at: datetime or None = datetime.utcnow()
     is_active: bool = True
     is_superuser: bool = False
@@ -64,3 +64,13 @@ class TokenData(BaseModel):
     disabled: bool | None = None
     email: str | None = None
     faculty_id: str | None = None
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+class PasswordResetToken(BaseModel):
+    reset_token: str
+
+class PasswordResetNewPassword(BaseModel):
+    new_password: str
+    repeat_new_password: str

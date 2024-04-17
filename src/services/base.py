@@ -67,7 +67,6 @@ class BaseService(ABC):
         else:
             query = await self.get_query(filter_params)
             logger.debug("yes yes %s", query)
-            print("yes yes %s", query)
             return await paginate(self.db, query, self.schema)
 
     async def get_by_id(self, obj_id: str):
