@@ -55,7 +55,7 @@ class CurriculumCourseResponse(BaseModel):
     curriculum_id: Optional[Union[UUID4, str]] = ''
     course_id: Optional[Union[UUID4, str]] = ''
     user_id: Optional[Union[UUID4, str]] = ''
-    course: CourseResponse
+    course: CourseDetailSchema
 
     class Config:
         orm_mode = True
@@ -66,7 +66,7 @@ class CurriculumCourseResponse(BaseModel):
     @classmethod
     def from_orm(cls, curriculumcourse_orm):
         # curriculum_response = CurriculumResponse.from_orm(curriculumcourse_orm.curriculum)
-        course_response = CourseResponse.from_orm(curriculumcourse_orm.course)
+        course_response = CourseDetailSchema.from_orm(curriculumcourse_orm.course)
 
         return cls(
             curriculum_id=curriculumcourse_orm.curriculum_id,

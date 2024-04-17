@@ -98,7 +98,10 @@ class CurriculumService(BaseService):
                 .filter(self.model.id == curriculum_id, self.model.created_by == user_id)
                 .options(
                     selectinload(Curriculum.program).options(selectinload(Program.template), selectinload(Program.degree)),
-                    selectinload(Curriculum.courses).options(selectinload(CurriculumCourse.course)),
+                    selectinload(Curriculum.courses).options(
+                        selectinload(CurriculumCourse.course)
+                        .options(selectinload(Course.prerequisites), selectinload(Course.subcourses))
+                    ),
                     selectinload(Curriculum.user).options(defer(User.password)),
 
                 )
@@ -145,25 +148,7 @@ class CurriculumService(BaseService):
 
             return curriculum
 
-        async def todict(self, obj, classkey=None):
-            # if isinstance(obj, dict):
-            #     data = {}
-            #     for (k, v) in obj.items():
-            #         data[k] = todict(v, classkey)
-            #     return data
-            if hasattr(obj, "_ast"):
-                return todict(obj._ast())
-            elif hasattr(obj, "__iter__") and not isinstance(obj, str):
-                return [todict(v, classkey) for v in obj]
-            elif hasattr(obj, "__dict__"):
-                data = dict([(key, todict(value, classkey))
-                             for key, value in obj.__dict__.items()
-                             if not callable(value) and not key.startswith('_')])
-                if classkey is not None and hasattr(obj, "__class__"):
-                    data[classkey] = obj.__class__.__name__
-                return data
-            else:
-                return obj
+
 
         async def get_all_curriculums_by_program(self, year: str = "2024", program_id: str = None, user_id: str = None):
             query = (

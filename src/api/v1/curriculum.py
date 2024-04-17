@@ -63,7 +63,11 @@ async def curriculum_by_id(
 
 
 @router.get('/main_curriculum_by_program')
-async def main_curriculum_list_by(current_user: Annotated[TokenData, Depends(get_current_active_user)], program_id: str, year: str = "2024", curriculum_service: CurriculumService = Depends(get_curriculum_service)):
+async def main_curriculum_list_by(
+        current_user: Annotated[TokenData, Depends(get_current_active_user)],
+        program_id: str, year: str = "2024",
+        curriculum_service: CurriculumService = Depends(get_curriculum_service)
+):
     return await curriculum_service.get_all_main(year, program_id)
 
 

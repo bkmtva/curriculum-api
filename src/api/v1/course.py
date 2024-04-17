@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, status
-from src.schema.course import CourseRequest, CourseCreate, CourseResponse, CourseFilter
+from fastapi import APIRouter, Depends, HTTPException, Body, status, Header, BackgroundTasks
+from src.schema.course import CourseRequest, CourseCreate, CourseResponse, CourseFilter, CourseDetailSchema
 from src.services.course import get_course_service, CourseService
 from fastapi.security import HTTPBearer
 from src.utils.jwt import TokenData, get_current_active_user
@@ -39,12 +39,26 @@ async def course_list(current_user: Annotated[TokenData, Depends(get_current_act
         filter_params.user_id = current_user.user_id
     return await course_service.get_all_with_pagination(filter_params)
 
+@router.get('/{course_id}', response_model=CourseDetailSchema)
+async def get_course(current_user: Annotated[TokenData, Depends(get_current_active_user)],
+                      course_id: str,
+                      course_service: CourseService = Depends(get_course_service)):
+    user_id = current_user.user_id
+    return await course_service.get_by_id(course_id)
 
+@router.put("/{course_id}", response_model=CourseDetailSchema)
+async def update_course(current_user: Annotated[TokenData, Depends(get_current_active_user)],
+                      course_id: str,
+                      course_service: CourseService = Depends(get_course_service),
+                    course_schema: CourseCreate = Body()):
+    user_id = current_user.user_id
+    return await course_service.update_object(course_id, course_schema)
 @router.delete('/delete_course', status_code=status.HTTP_204_NO_CONTENT)
 async def course_delete(course_id: str,
                         current_user: Annotated[TokenData, Depends(get_current_active_user)],
                         course_service: CourseService = Depends(get_course_service)):
     return await course_service.delete_by_id(course_id)
+
 
 # @router.get("/course-info", response_model=CourseResponse)
 # async def get_current_course(current_user: Annotated[TokenData, Depends(get_current_active_user)],
