@@ -27,10 +27,18 @@ class BaseService(ABC):
         self.db = db
 
     async def create_object(self, obj_sch):
-        db_obj = self.model(**obj_sch.dict())
+        others = {}
+        obj_dict = obj_sch.dict()
+        for key, value in self.relationship_options.items():
+            others[value['field']] = await self._set_obj_ids(obj_dict.pop(key), value['model'])
+        db_obj = self.model(**obj_dict)
+        for key, value in others.items():
+            setattr(db_obj, key, value)
         self.db.add(db_obj)
         await self.db_commit()
         await self.db.refresh(db_obj)
+        if self.detail_schema:
+            return await self._get_object_from_db(db_obj.id)
         return db_obj
 
     async def update_object(self, obj_id: str, obj_sch):

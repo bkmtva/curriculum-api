@@ -107,18 +107,16 @@ class CurriculumService(BaseService):
                 )
             )
 
-            curriculum_execute = await self.db.execute(query)
-            curriculum_result = curriculum_execute.scalar()
+            curriculum_result = (await self.db.execute(query)).scalar()
+
             if not curriculum_result:
                 raise HTTPException(status_code=404, detail=f"No curriculum found")
-
-            curriculum = curriculum_result.__dict__
-
-            curriculum['program_title'] = curriculum.get("program", {}).title
-            # curriculum['program_id'] = curriculum.get("program", {}).id
-            curriculum['semester_count'] = curriculum.get("program", {}).template.semester_count
-            curriculum['degree_name'] = curriculum.get("program", {}).degree.name
-            curriculum.pop('program')
+            print('rmjgkergegk', curriculum_result.__dict__)
+            curriculum = CurriculumSchema.from_orm(curriculum_result)
+            print(curriculum.__dict__)
+            curriculum.program_title = curriculum.program.title
+            curriculum.semester_count = curriculum.program.template.semester_count
+            curriculum.degree_name = curriculum.program.degree.name
                 # curriculums.pop("program")
 
             return curriculum
@@ -129,8 +127,12 @@ class CurriculumService(BaseService):
                 select(self.model)
                 .filter(self.model.id == curriculum_id, self.model.created_by == user_id)
                 .options(
-                    selectinload(Curriculum.program).options(selectinload(Program.template), selectinload(Program.degree)),
-                    selectinload(Curriculum.courses).options(selectinload(CurriculumCourse.course)),
+                    selectinload(Curriculum.program).options(selectinload(Program.template),
+                                                             selectinload(Program.degree)),
+                    selectinload(Curriculum.courses).options(
+                        selectinload(CurriculumCourse.course)
+                        .options(selectinload(Course.prerequisites), selectinload(Course.subcourses))
+                    ),
                     selectinload(Curriculum.user).options(defer(User.password)),
 
                 )
@@ -138,9 +140,10 @@ class CurriculumService(BaseService):
 
             curriculum_execute = await self.db.execute(query)
             curriculum_result = curriculum_execute.scalar()
-            curriculum = CurriculumSchema.from_orm(curriculum_result)
             if not curriculum_result:
                 raise HTTPException(status_code=404, detail=f"No curriculum found")
+            print('rmjgkergegk', curriculum_result.__dict__)
+            curriculum = CurriculumSchema.from_orm(curriculum_result)
 
             curriculum.program_title = curriculum.program.title
             curriculum.semester_count = curriculum.program.template.semester_count

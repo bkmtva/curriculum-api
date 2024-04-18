@@ -42,21 +42,19 @@ class CourseService(BaseService):
             selectinload(Course.subcourses),
         ).filter_by(id=obj_id))).scalar()
 
-    async def create_object(self, obj_sch):
-        others = {}
-        obj_dict = obj_sch.dict()
-        for key, value in self.relationship_options.items():
-            others[value['field']] = await self._set_obj_ids(obj_dict.pop(key), value['model'])
-        db_obj = self.model(**obj_dict)
-
-        logger.info(others)
-        for key, value in others.items():
-            setattr(db_obj, key, value)
-        self.db.add(db_obj)
-        await self.db_commit()
-        await self.db.refresh(db_obj)
-
-        return db_obj
+    # async def create_object(self, obj_sch):
+    #     others = {}
+    #     obj_dict = obj_sch.dict()
+    #     for key, value in self.relationship_options.items():
+    #         others[value['field']] = await self._set_obj_ids(obj_dict.pop(key), value['model'])
+    #     db_obj = self.model(**obj_dict)
+    #     for key, value in others.items():
+    #         setattr(db_obj, key, value)
+    #     self.db.add(db_obj)
+    #     await self.db_commit()
+    #     await self.db.refresh(db_obj)
+    #
+    #     return db_obj
 
 
 
