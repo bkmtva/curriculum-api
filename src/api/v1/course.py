@@ -22,7 +22,7 @@ async def course_create(
     return await course_service.create_object(form_data)
 
 @router.post('/bulk_create', response_model=List[CourseRequest])
-async def course_create(
+async def courses_create(
         courses_data: List[CourseCreate],
         current_user: Annotated[TokenData, Depends(get_current_active_user)],
         course_service: CourseService = Depends(get_course_service)
@@ -46,7 +46,7 @@ async def course_list(
     return await course_service.get_all_with_pagination(filter_params)
 
 @router.get('/{course_id}', response_model=CourseDetailSchema)
-async def get_course(
+async def course_get(
         current_user: Annotated[TokenData, Depends(get_current_active_user)],
         course_id: str,
         course_service: CourseService = Depends(get_course_service)
@@ -55,7 +55,7 @@ async def get_course(
     return await course_service.get_by_id(course_id)
 
 @router.put("/{course_id}", response_model=CourseDetailSchema)
-async def update_course(
+async def course_update(
         current_user: Annotated[TokenData, Depends(get_current_active_user)],
         course_id: str,
         course_service: CourseService = Depends(get_course_service),

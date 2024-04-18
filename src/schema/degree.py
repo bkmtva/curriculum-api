@@ -6,12 +6,12 @@ from pydantic import BaseModel, EmailStr, UUID4
 from typing import List
 from src.schema.utils import orjson_dumps
 import uuid
-from typing import Optional
+from typing import Optional, Union
 
 
 class DegreeCreate(BaseModel):
     name: str = ""
-    faculty_id: UUID4 or str
+    faculty_id: Optional[Union[UUID4, str]] = ''
 
     class Config:
         from_attributes = True
@@ -20,7 +20,7 @@ class DegreeCreate(BaseModel):
 
 
 class DegreeResponse(DegreeCreate):
-    id: UUID4
+    id: Optional[UUID4] or Optional[str]
 
 
 class DegreeRequest(BaseModel):

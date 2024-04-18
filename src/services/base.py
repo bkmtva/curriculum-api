@@ -70,11 +70,9 @@ class BaseService(ABC):
 
     async def get_all_with_pagination(self, filter_params=None):
         if filter_params is None:
-            logger.debug("no no")
             return await paginate(self.db, select(self.model), self.schema)
         else:
             query = await self.get_query(filter_params)
-            logger.debug("yes yes %s", query)
             return await paginate(self.db, query, self.schema)
 
     async def get_by_id(self, obj_id: str):

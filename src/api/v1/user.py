@@ -45,13 +45,13 @@ async def get_current_user(current_user: Annotated[TokenData, Depends(get_curren
 
 
 @router.post('/password/reset/request/')
-async def request_password_reset(password_reset_request: user_schema.PasswordResetRequest, user_service: UserService = Depends(get_user_service)) -> dict:
+async def password_reset_request(password_reset_request: user_schema.PasswordResetRequest, user_service: UserService = Depends(get_user_service)) -> dict:
     return await user_service.send_email(password_reset_request)
 
 @router.post('/password/reset/validate/')
-async def request_password_reset(token_data: Annotated[ResetTokenData, Depends(get_current_reset_email)]) -> dict:
+async def password_reset_validate(token_data: Annotated[ResetTokenData, Depends(get_current_reset_email)]) -> dict:
     return {"reset_token": token_data.reset_token}
 
 @router.post('/password/reset/new_password/')
-async def request_password_reset(new_password_data: user_schema.PasswordResetNewPassword, token_data: Annotated[ResetTokenData, Depends(get_current_reset_email)], user_service: UserService = Depends(get_user_service)) -> dict:
+async def password_reset_new(new_password_data: user_schema.PasswordResetNewPassword, token_data: Annotated[ResetTokenData, Depends(get_current_reset_email)], user_service: UserService = Depends(get_user_service)) -> dict:
     return await user_service.change_password(new_password_data, token_data.email)

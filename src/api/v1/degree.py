@@ -14,6 +14,7 @@ oauth2_scheme = HTTPBearer()
 @router.post('/create_degree', response_model=DegreeRequest)
 async def degree_create(form_data: DegreeCreate, current_user: Annotated[TokenData, Depends(get_current_active_user)],
                       degree_service: DegreeService = Depends(get_degree_service)):
+    form_data.faculty_id = current_user.faculty_id
     return await degree_service.create_object(form_data)
 
 @router.get('/list_degree_by')
@@ -29,7 +30,15 @@ async def degree_delete(degree_id: str,
                          current_user: Annotated[TokenData, Depends(get_current_active_user)],
                          degree_service: DegreeService = Depends(get_degree_service)):
     return await degree_service.delete_by_id(degree_id)
-# @router.get("/degree-info", response_model=DegreeResponse)
-# async def get_current_degree(current_user: Annotated[TokenData, Depends(get_current_active_user)],
-#                               degree_service: DegreeService = Depends(get_degree_service)):
-#     return await degree_service.get_degree_info(current_user)
+
+@router.put("/{degree_id}", response_model=DegreeRequest)
+async def degree_update(
+        current_user: Annotated[TokenData, Depends(get_current_active_user)],
+        degree_id: str,
+        degree_service: DegreeService = Depends(get_degree_service),
+        degree_schema: DegreeCreate = Body()
+):
+    degree_schema.faculty_id = current_user.faculty_id
+    user_id = current_user.user_id
+    return await degree_service.update_object(degree_id, degree_schema)
+
