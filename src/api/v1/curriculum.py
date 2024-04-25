@@ -71,7 +71,7 @@ async def main_curriculum_list_by(
     return await curriculum_service.get_all_main(year, program_id)
 
 
-@router.delete('/delete_curriculum', status_code=status.HTTP_204_NO_CONTENT)
+@router.delete('/{curriculum_id}', status_code=status.HTTP_204_NO_CONTENT)
 async def curriculum_delete(curriculum_id: str,
                          current_user: Annotated[TokenData, Depends(get_current_active_user)],
                          curriculum_service: CurriculumService = Depends(get_curriculum_service)):
