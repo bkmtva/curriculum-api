@@ -26,7 +26,7 @@ class Course(UUIDMixin, CreatedUpdatedMixin,  Base):
     user_id = sa.Column(UUID(as_uuid=True), ForeignKey("tbl_user.id"))
     user = relationship("User", back_populates="courses")
 
-    curriculums = relationship("CurriculumCourse", back_populates="course")
+    curriculums = relationship("CurriculumCourse", back_populates="course", cascade="all, delete-orphan")
     prerequisites = relationship("Course",
                                  secondary="tbl_prerequisite",
                                  primaryjoin="Course.id==Prerequisite.child_id",

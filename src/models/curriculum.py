@@ -38,7 +38,7 @@ class Curriculum(UUIDMixin, CreatedUpdatedMixin, Base):
     courses = relationship("CurriculumCourse", back_populates="curriculum", order_by=[
         CurriculumCourse.semester,
         CurriculumCourse.order_in_semester
-    ])
+    ],  cascade="all, delete-orphan")
 
 
 
