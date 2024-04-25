@@ -22,6 +22,7 @@ class ProgramService(BaseService):
     model = Program
     schema = ProgramResponse
     service_name = 'program'
+    relationships = ['template', 'degree']
 
     async def get_all_main(self, year: str = "2024", user_id=None):
         subquery = (

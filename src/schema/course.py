@@ -62,19 +62,6 @@ class CurriculumCourseResponse(BaseModel):
         json_loads = orjson.loads
         json_dumps = orjson_dumps
 
-    @classmethod
-    def from_orm(cls, curriculumcourse_orm):
-        # curriculum_response = CurriculumResponse.from_orm(curriculumcourse_orm.curriculum)
-        course_response = CourseDetailSchema.from_orm(curriculumcourse_orm.course)
-
-        return cls(
-            curriculum_id=curriculumcourse_orm.curriculum_id,
-            course_id=curriculumcourse_orm.course_id,
-            semester=curriculumcourse_orm.semester,
-            order_in_semester=curriculumcourse_orm.order_in_semester,
-            # curriculum=curriculum_response,
-            course=course_response,
-        )
 
 
 class CourseRequest(BaseModel):

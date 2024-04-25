@@ -31,22 +31,6 @@ class ProgramResponse(ProgramCreate):
     degree: DegreeResponse
     id: UUID4
 
-    @classmethod
-    def from_orm(cls, program_orm):
-        template_response = TemplateResponse.from_orm(program_orm.template)
-        degree_response = DegreeResponse.from_orm(program_orm.degree)
-
-        return cls(
-            id=program_orm.id,
-            title=program_orm.title,
-            code=program_orm.code,
-            cipher=program_orm.cipher,
-            ects=program_orm.ects,
-            degree_id=program_orm.degree_id,
-            template_id=program_orm.template_id,
-            template=template_response,
-            degree=degree_response
-        )
 
 
 class ProgramRequest(BaseModel):
