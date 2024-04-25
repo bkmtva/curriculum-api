@@ -16,7 +16,7 @@ services:
       - "8000:8000"
     volumes:
       - static_value:/app/static/
-      - media_value:/app/media/
+      - ./media:/app/media/
     env_file:
       - ./.env
     networks:
@@ -30,5 +30,4 @@ networks:
 
 volumes:
   static_value:
-  media_value:
 

@@ -6,7 +6,6 @@ from pydantic import BaseModel, EmailStr, UUID4
 from typing import List
 from src.schema.utils import orjson_dumps
 import uuid
-from typing import Optional
 from src.schema.template import TemplateResponse
 from src.schema.degree import DegreeResponse
 # from src.schema.curriculum import CurriculumResponse

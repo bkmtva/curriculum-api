@@ -31,6 +31,7 @@ from email.mime.multipart import MIMEMultipart
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, EmailStr
 from urllib.parse import urlencode
+import uuid
 
 class UserService(BaseService):
     model = User
@@ -43,13 +44,12 @@ class UserService(BaseService):
         self.elastic = elastic
         self.db = db
 
-    async def create_user(self, form_data, token_data: str):
+    async def create_user(self, form_data, token_data: str, file=None):
         credential_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="No access",
             headers={"WWW-Authenticate": "Bearer"}
         )
-        # token_data = await self.verify_token(token)
         if not token_data:
             raise credential_exception
         if token_data:
@@ -57,16 +57,62 @@ class UserService(BaseService):
             if not user or not user.is_superuser:
                 raise credential_exception
 
-        existing_user = await self._get_object_from_db(email=form_data.email)
+        existing_user = await self._get_object_from_db_email(email=form_data.email)
         if existing_user:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
-
+        if file and file.filename:
+            contents = await file.read()
+            file_path = f"/app/media/{file.filename}"
+            with open(file_path, "wb") as f:
+                f.write(contents)
+            form_data.profile_image = file_path
         form_data.password = await self._get_password_hash(form_data.password)
         db_obj = self.model(**form_data.dict())
         self.db.add(db_obj)
-        await self.db.commit()
+        await self.db_commit()
         await self.db.refresh(db_obj)
+
         return db_obj
+
+
+    async def update_object(self, obj_id: str, current_user: str, obj_sch, file=None):
+        credential_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No access",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+
+        if current_user.user_id != obj_id and not current_user.is_superuser:
+            raise credential_exception
+
+        db_obj = await self._get_object_from_db(obj_id)
+        if not db_obj:
+            raise HTTPException(status_code=404, detail="Object not found")
+        for key, value in self.relationship_options.items():
+            if getattr(obj_sch, key) is not None:
+                setattr(db_obj, value['field'], await self._set_obj_ids(getattr(obj_sch, key), value['model']))
+
+        if file and file.filename:
+            contents = await file.read()
+            file_path = f"/app/media/{file.filename}"
+            with open(file_path, "wb") as f:
+                f.write(contents)
+            obj_sch.profile_image = file_path
+        if obj_sch.password and obj_sch.old_password:
+            if not await self._verify_password(obj_sch.old_password, db_obj.password):
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid old password")
+            obj_sch.password = await self._get_password_hash(obj_sch.password)
+            del obj_sch.old_password
+
+        await self._update_object_in_db(db_obj=db_obj, obj_sch=obj_sch)
+        await self.db.refresh(db_obj)
+        if self.detail_schema:
+            obj_sch = self.detail_schema.model_validate(db_obj.__dict__)
+        else:
+            obj_sch = self.schema.model_validate(db_obj.__dict__)
+        await self._put_object_to_cache(obj_sch)
+        return obj_sch
 
     async def create_access_token(self, data: dict, expires_delta: timedelta or None = None):
         to_encode = data.copy()
@@ -123,7 +169,7 @@ class UserService(BaseService):
     async def _verify_password(self, plain_password, hashed_password):
         return pwd_context.verify(plain_password, hashed_password)
 
-    async def _get_object_from_db(self, email: str):
+    async def _get_object_from_db_email(self, email: str):
         return (await self.db.execute(select(self.model).filter_by(email=email))).scalar()
 
     async def _delete_object_from_cache(self, email: str):
@@ -149,7 +195,7 @@ class UserService(BaseService):
         db_obj = None
         # db_obj = await self._object_from_cache(email)
         if not db_obj:
-            db_obj = await self._get_object_from_db(email)
+            db_obj = await self._get_object_from_db_email(email)
             if not db_obj:
                 raise HTTPException(status_code=404, detail="Incorrect email or password")
             db_obj = self.schema.model_validate(db_obj.__dict__)

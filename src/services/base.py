@@ -108,8 +108,9 @@ class BaseService(ABC):
         return (await self.db.execute(select(self.model).filter_by(id=obj_id))).scalar()
 
     async def _update_object_in_db(self, db_obj, obj_sch):
-        for var, value in vars(obj_sch).items():
-            setattr(db_obj, var, value) if value else None
+        for var, value in obj_sch.dict(exclude_unset=True).items():
+            if var not in self.relationship_options.keys() and value is not None:
+                setattr(db_obj, var, value)
         self.db.add(db_obj)
         await self.db_commit()
 

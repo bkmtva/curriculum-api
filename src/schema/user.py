@@ -11,7 +11,7 @@ from typing import Optional
 class UserRequest(BaseModel):
     first_name: str or None = ""
     last_name: str or None = ""
-    email: str
+    email: str = ""
     profile_image: Optional[str] or None = ''
     datetime_created: datetime = datetime.utcnow()
     last_login_at: datetime or None = datetime.utcnow()
@@ -22,14 +22,27 @@ class UserRequest(BaseModel):
 
     class Config:
         from_attributes = True
-        json_loads = orjson.loads
-        json_dumps = orjson_dumps
+
 
 class UserResponse(UserRequest):
     id: UUID4
 
 class UserCreate(UserRequest):
-    password: str
+    password: str =""
+
+
+class UserUpdate(UserRequest):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+    profile_image: Optional[str] or Optional[None] = None
+    datetime_created: Optional[datetime] = None
+    last_login_at: Optional[datetime] = None
+    is_active: Optional[bool] = True
+    is_superuser: Optional[bool] = False
+    faculty_id: Optional[str] = None
+    password: Optional[str] = None
+    old_password: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: str

@@ -12,8 +12,8 @@ class User(UUIDMixin, CreatedUpdatedMixin, Base):
 
     first_name = sa.Column(sa.String(255))
     last_name = sa.Column(sa.String(255))
-    password = sa.Column(sa.String(255), nullable=False)
-    email = sa.Column(sa.String(255), nullable=False, unique=True)
+    password = sa.Column(sa.String(255))
+    email = sa.Column(sa.String(255), unique=True)
     profile_image = sa.Column(sa.String(255))
     # created_at = sa.Column(sa.DateTime, default=datetime.utcnow, nullable=False)
     last_login_at = sa.Column(sa.DateTime)
