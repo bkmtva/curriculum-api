@@ -4,7 +4,7 @@ from elasticsearch import AsyncElasticsearch
 from fastapi import Depends
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from fastapi import HTTPException, status
 from src.db.database import get_db
 from src.db.elastic import get_elastic
 from src.db.redis import get_redis
@@ -23,7 +23,8 @@ class ProgramService(BaseService):
     schema = ProgramResponse
     service_name = 'program'
 
-    async def get_all_main(self, year: str = "2024"):
+    async def get_all_main(self, year: str = "2024", user_id=None):
+        print(year, "yeaaar", user_id)
         subquery = (
             select(Curriculum.program_id, func.last_value(Curriculum.id).over(
                 partition_by=Curriculum.program_id,
@@ -39,13 +40,14 @@ class ProgramService(BaseService):
                 select(Curriculum)
                 .join(subquery, and_(Curriculum.program_id == subquery.c.program_id,
                       Curriculum.id == subquery.c.latest_curriculum_id)
-                      ).options(
-                        selectinload(Curriculum.program),)
+                      )
+                .options(selectinload(Curriculum.program),)
+                .filter(Curriculum.year == year, Curriculum.created_by == user_id)
             )
         ).scalars().all()
         main_programs = [curriculum.program for curriculum in main_curriculums]
         if not main_curriculums:
-            raise HTTPException(status_code=404, detail=f"No main curriculums found for the year {year}")
+            raise HTTPException(status_code=404, detail=f"No programs with curriculums found for the year {year}")
         return {"main_programs": main_programs,}
 
 

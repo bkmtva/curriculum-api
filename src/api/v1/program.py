@@ -25,7 +25,8 @@ async def program_list_by(
 
 @router.get('/list_main_programs')
 async def main_program_list_by(current_user: Annotated[TokenData, Depends(get_current_active_user)], year: str="2024", program_service: ProgramService = Depends(get_program_service)):
-    return await program_service.get_all_main(year)
+    user_id = current_user.user_id
+    return await program_service.get_all_main(year=year, user_id=user_id)
 
 
 @router.delete('/delete_program', status_code=status.HTTP_204_NO_CONTENT)
