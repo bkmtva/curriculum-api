@@ -28,6 +28,7 @@ class ResetTokenData(BaseModel):
 async def is_token_blacklisted(jti: str = 'ghj') -> bool:
     key = 'expired_access::' + str(jti)
     token_in_redis = await auth_redis_db.get(key)
+    print("kremgmerkg",jti, token_in_redis)
     return token_in_redis is not None
 
 
@@ -47,6 +48,7 @@ async def logout_current_user(token: HTTPAuthorizationCredentials = Depends(oaut
     try:
 
         payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_sub": False})
+
         jti = payload.get("jti")
         if await is_token_blacklisted(jti):
             raise HTTPException(status_code=400, detail="Already logged out")
@@ -67,6 +69,7 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Depends(oauth2_
     try:
         payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_sub": False})
         jti = payload.get("jti")
+        print(payload, "rujngerg")
         if await is_token_blacklisted(jti):
             raise credentials_exception
         subject = payload.get("sub")
@@ -97,7 +100,6 @@ async def get_current_reset_email(token: HTTPAuthorizationCredentials = Depends(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        print(token)
         payload = jwt.decode(token.credentials, RESET_SECRET_KEY, algorithms=[ALGORITHM], options={"verify_sub": False})
         jti = payload.get("jti")
         if await is_token_blacklisted(jti):

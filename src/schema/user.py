@@ -2,11 +2,12 @@ from typing import Optional
 from datetime import datetime
 
 from orjson import orjson
-from pydantic import BaseModel, EmailStr, UUID4
+from pydantic import BaseModel, EmailStr, UUID4, computed_field
 from typing import List
 from src.schema.utils import orjson_dumps
 import uuid
 from typing import Optional
+from src.schema.faculty import FacultyResponse
 
 class UserRequest(BaseModel):
     first_name: str or None = ""
@@ -26,6 +27,11 @@ class UserRequest(BaseModel):
 
 class UserResponse(UserRequest):
     id: UUID4
+    class Config:
+        json_loads = orjson.loads
+        json_dumps = orjson_dumps
+        orm_mode = True
+        from_attributes = True
 
 class UserCreate(UserRequest):
     password: str =""
@@ -55,6 +61,16 @@ class UserLogin(BaseModel):
 
 class UserInDB(UserResponse):
     password: str
+
+
+class UserDetailSchema(UserResponse):
+    faculty: Optional[FacultyResponse] = None
+
+    class Config:
+        from_attributes = True
+        json_loads = orjson.loads
+        json_dumps = orjson_dumps
+
 
 
 class Token(BaseModel):

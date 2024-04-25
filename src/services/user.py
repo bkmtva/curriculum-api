@@ -13,7 +13,7 @@ from src.db.elastic import get_elastic
 from src.db.redis import get_redis
 
 from src.models.user import User
-from src.schema.user import UserInDB, TokenData, UserLogin, UserRequest, UserResponse
+from src.schema.user import UserInDB, TokenData, UserLogin, UserRequest, UserResponse, UserDetailSchema
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
@@ -38,7 +38,8 @@ class UserService(BaseService):
     schema = UserInDB
     service_name = 'user'
     OBJECT_CACHE_EXPIRE_IN_SECONDS = 60 * 5
-
+    detail_schema = UserDetailSchema
+    relationships = ['faculty']
     def __init__(self, redis: Redis, elastic: AsyncElasticsearch, db: AsyncSession):
         self.redis = redis
         self.elastic = elastic
@@ -74,6 +75,10 @@ class UserService(BaseService):
 
         return db_obj
 
+    async def _get_object_from_db(self, obj_id):
+        return (await self.db.execute(select(User).options(
+            selectinload(User.faculty),
+        ).filter_by(id=obj_id))).scalar()
 
     async def update_object(self, obj_id: str, current_user: str, obj_sch, file=None):
         credential_exception = HTTPException(
@@ -86,7 +91,10 @@ class UserService(BaseService):
         if current_user.user_id != obj_id and not current_user.is_superuser:
             raise credential_exception
 
+
         db_obj = await self._get_object_from_db(obj_id)
+        if not current_user.is_superuser:
+            obj_sch.is_superuser = db_obj.is_superuser
         if not db_obj:
             raise HTTPException(status_code=404, detail="Object not found")
         for key, value in self.relationship_options.items():
@@ -121,7 +129,7 @@ class UserService(BaseService):
         else:
             expire = datetime.utcnow() + timedelta(minutes=15)
 
-        to_encode.update({"exp": expire})
+        to_encode.update({"exp": expire, "jti": str(uuid.uuid4())})
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
     
@@ -132,7 +140,7 @@ class UserService(BaseService):
             expire = datetime.utcnow() + expires_delta
         else:
             expire = datetime.utcnow() + timedelta(minutes=15)
-        to_encode.update({"exp": expire})
+        to_encode.update({"exp": expire, "jti": str(uuid.uuid4())})
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
 
@@ -170,7 +178,9 @@ class UserService(BaseService):
         return pwd_context.verify(plain_password, hashed_password)
 
     async def _get_object_from_db_email(self, email: str):
-        return (await self.db.execute(select(self.model).filter_by(email=email))).scalar()
+        return (await self.db.execute(select(self.model).options(
+            selectinload(User.faculty),
+        ).filter_by(email=email))).scalar()
 
     async def _delete_object_from_cache(self, email: str):
         await self.redis.delete(f'{self.service_name}_{email}')
@@ -183,13 +193,6 @@ class UserService(BaseService):
             self.OBJECT_CACHE_EXPIRE_IN_SECONDS
         )
 
-    # async def _object_from_cache(self, email: str):
-    #     print('Get Object From Cache')
-    #     data = await self.redis.get(f'{self.service_name}_{email}')
-    #     if not data:
-    #         return None
-    #     data = self.schema.parse_raw(data)
-    #     return data
 
     async def get_user_by_email(self, email: str):
         db_obj = None
@@ -198,9 +201,11 @@ class UserService(BaseService):
             db_obj = await self._get_object_from_db_email(email)
             if not db_obj:
                 raise HTTPException(status_code=404, detail="Incorrect email or password")
-            db_obj = self.schema.model_validate(db_obj.__dict__)
-            await self._put_object_to_cache(db_obj)
-        return db_obj
+
+            obj_sch = self.schema.model_validate(db_obj.__dict__)
+
+            await self._put_object_to_cache(obj_sch)
+        return obj_sch
 
     async def authenticate_user(self, email: str, password: str):
         user = await self.get_user_by_email(email)
@@ -278,10 +283,8 @@ class UserService(BaseService):
         user = await self.get_user_by_email(email=token_data.email)
         if user is None:
             raise credential_exception
-        print(user.dict())
-        user_response = UserResponse(**user.dict())
-        print(user.dict())
-        return user_response
+
+        return user
 
     async def create_reset_token(self, data: dict, expires_delta: timedelta or None = None):
         to_encode = data.copy()
@@ -290,7 +293,7 @@ class UserService(BaseService):
         else:
             expire = datetime.utcnow() + timedelta(minutes=15)
 
-        to_encode.update({"exp": expire})
+        to_encode.update({"exp": expire, "jti": str(uuid.uuid4())})
         encoded_jwt = jwt.encode(to_encode, RESET_SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, Body, status, Header
 from src.schema.template import TemplateRequest, TemplateCreate, TemplateResponse, TemplateFilter
 from src.services.template import get_template_service, TemplateService
 from fastapi.security import HTTPBearer
@@ -10,25 +10,37 @@ router = APIRouter(prefix="/template", tags=["template"])
 oauth2_scheme = HTTPBearer()
 
 
-@router.post('/create_template', response_model=TemplateRequest)
-async def template_create(form_data: TemplateCreate, current_user: Annotated[TokenData, Depends(get_current_active_user)],
-                      template_service: TemplateService = Depends(get_template_service)):
+@router.post('', response_model=TemplateRequest)
+async def template_create(
+        form_data: TemplateCreate,
+        current_user: Annotated[TokenData, Depends(get_current_active_user)],
+        template_service: TemplateService = Depends(get_template_service)
+):
     return await template_service.create_object(form_data)
 
-@router.get('/list_template_by')
-async def main_template_list_by(
-                       current_user: Annotated[TokenData, Depends(get_current_active_user)],
-                      template_service: TemplateService = Depends(get_template_service)):
+
+@router.get('')
+async def template_list(
+        current_user: Annotated[TokenData, Depends(get_current_active_user)],
+        template_service: TemplateService = Depends(get_template_service)
+):
     return await template_service.get_all_with_pagination()
 
 
-@router.delete('/delete_template', status_code=status.HTTP_204_NO_CONTENT)
-async def template_delete(template_id: str,
-                         current_user: Annotated[TokenData, Depends(get_current_active_user)],
-                         template_service: TemplateService = Depends(get_template_service)):
-    return await template_service.delete_by_id(template_id)
+@router.put("/{template_id}", response_model=TemplateRequest)
+async def template_update(
+        current_user: Annotated[TokenData, Depends(get_current_active_user)],
+        template_id: str,
+        template_service: TemplateService = Depends(get_template_service),
+        template_schema: TemplateCreate = Body()
+):
+    return await template_service.update_object(template_id, template_schema)
 
-# @router.get("/template-info", response_model=TemplateResponse)
-# async def get_current_template(current_user: Annotated[TokenData, Depends(get_current_active_user)],
-#                               template_service: TemplateService = Depends(get_template_service)):
-#     return await template_service.get_template_info(current_user)
+
+@router.delete('/{template_id}', status_code=status.HTTP_204_NO_CONTENT)
+async def template_delete(
+        template_id: str,
+        current_user: Annotated[TokenData, Depends(get_current_active_user)],
+        template_service: TemplateService = Depends(get_template_service)
+):
+    return await template_service.delete_by_id(template_id)

@@ -100,8 +100,3 @@ async def set_main_curriculum(curriculum_id: str, current_user: Annotated[TokenD
                          curriculum_service: CurriculumService = Depends(get_curriculum_service)):
 
     return await curriculum_service.set_as_main(curriculum_id)
-
-# @router.get("/curriculum-info", response_model=CurriculumResponse)
-# async def get_current_curriculum(current_user: Annotated[TokenData, Depends(get_current_active_user)],
-#                               curriculum_service: CurriculumService = Depends(get_curriculum_service)):
-#     return await curriculum_service.get_curriculum_info(current_user)

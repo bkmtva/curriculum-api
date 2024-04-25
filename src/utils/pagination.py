@@ -20,7 +20,4 @@ async def paginate(session, query, schema):
     result = (await session.execute(query)).scalars()
 
     items = [schema.from_orm(item).dict() for item in result]
-    for i in items:
-        print(i)
-    print(query)
     return items

@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from src.api.v1.auth import router as auth_route
 from src.api.v1.user import router as user_route
 from src.api.v1.faculty import router as faculty_route
 from src.api.v1.degree import router as degree_route
@@ -9,6 +10,7 @@ from src.api.v1.course import router as course_route
 
 urls = APIRouter(prefix='/v1')
 
+urls.include_router(auth_route)
 urls.include_router(user_route)
 urls.include_router(faculty_route)
 urls.include_router(degree_route)

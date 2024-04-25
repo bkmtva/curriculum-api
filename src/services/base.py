@@ -21,6 +21,7 @@ class BaseService(ABC):
     OBJECT_CACHE_EXPIRE_IN_SECONDS = 60 * 5
     search_fields = []
     relationship_options = {}
+    relationships = []
     def __init__(self, redis: Redis, elastic: AsyncElasticsearch, db: AsyncSession):
         self.redis = redis
         self.elastic = elastic
@@ -70,13 +71,19 @@ class BaseService(ABC):
 
     async def get_all_with_pagination(self, filter_params=None):
         if filter_params is None:
-            return await paginate(self.db, select(self.model), self.schema)
+            query = select(self.model)
         else:
             query = await self.get_query(filter_params)
+        for relationship in self.relationships:
+            query = query.options(selectinload(getattr(self.model, relationship)))
+        if self.detail_schema:
+            return await paginate(self.db, query, self.detail_schema)
+        else:
             return await paginate(self.db, query, self.schema)
 
     async def get_by_id(self, obj_id: str):
-        db_obj = await self._object_from_cache(obj_id)
+        db_obj = None
+        # db_obj = await self._object_from_cache(obj_id)
         if not db_obj:
             db_obj = await self._get_object_from_db(obj_id)
             if not db_obj:
@@ -145,10 +152,6 @@ class BaseService(ABC):
 
                     else:
                         query = query.filter(getattr(self.model, i) == str(param_value))
-        relationships = class_mapper(self.model).relationships.keys()
-
-        for relationship in relationships:
-            query = query.options(selectinload(getattr(self.model, relationship)))
 
         return query
 

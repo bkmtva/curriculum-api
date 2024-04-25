@@ -24,7 +24,6 @@ class ProgramService(BaseService):
     service_name = 'program'
 
     async def get_all_main(self, year: str = "2024", user_id=None):
-        print(year, "yeaaar", user_id)
         subquery = (
             select(Curriculum.program_id, func.last_value(Curriculum.id).over(
                 partition_by=Curriculum.program_id,

@@ -88,7 +88,6 @@ class CurriculumService(BaseService):
             for curriculum in curriculums:
                 curriculum['program_title'] = curriculum.get("program", {}).title
                 curriculum['semester_count'] = curriculum.get("program", {}).template.semester_count
-                # curriculums.pop("program")
 
             return curriculums
 
@@ -111,13 +110,10 @@ class CurriculumService(BaseService):
 
             if not curriculum_result:
                 raise HTTPException(status_code=404, detail=f"No curriculum found")
-            print('rmjgkergegk', curriculum_result.__dict__)
             curriculum = CurriculumSchema.from_orm(curriculum_result)
-            print(curriculum.__dict__)
             curriculum.program_title = curriculum.program.title
             curriculum.semester_count = curriculum.program.template.semester_count
             curriculum.degree_name = curriculum.program.degree.name
-                # curriculums.pop("program")
 
             return curriculum
 
@@ -142,7 +138,6 @@ class CurriculumService(BaseService):
             curriculum_result = curriculum_execute.scalar()
             if not curriculum_result:
                 raise HTTPException(status_code=404, detail=f"No curriculum found")
-            print('rmjgkergegk', curriculum_result.__dict__)
             curriculum = CurriculumSchema.from_orm(curriculum_result)
 
             curriculum.program_title = curriculum.program.title
