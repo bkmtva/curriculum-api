@@ -23,6 +23,7 @@ class CourseService(BaseService):
     detail_schema = CourseDetailSchema
     service_name = 'course'
     search_fields = ['title', 'course_code']
+    relationships = ['subcourses', 'prerequisites']
     relationship_options = {
         'pre_ids': {
             'model': Course,
