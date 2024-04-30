@@ -17,6 +17,7 @@ services:
     volumes:
       - static_value:/app/static/
       - ./media:/app/media/
+      - ./excel_files:/app/excel_files/
     env_file:
       - ./.env
     networks:

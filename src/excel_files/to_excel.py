@@ -7,7 +7,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.styles import Alignment, Font, Border, Side
 import pandas as pd
 import json
-SOURCE_PATH = "src/excel_files/"
+SOURCE_PATH = "/app/excel_files/"
 BASE_FILE = SOURCE_PATH+"template.xlsx"
 file_save = "curriculum.xlsx"
 

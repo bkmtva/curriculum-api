@@ -85,7 +85,7 @@ async def curriculum_download(curriculum_id: str, current_user: Annotated[TokenD
     currciculum = await curriculum_service.get_curriculum(user_id=user_id, curriculum_id=curriculum_id)
     curr = currciculum.json()
     file_name = to_excel(curr)
-    excel_file_path = f"src/excel_files/{file_name}"
+    excel_file_path = f"/app/excel_files/{file_name}"
     with open(excel_file_path, "rb") as file:
         content = file.read()
     response = Response(content=content)
