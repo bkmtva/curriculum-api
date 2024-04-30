@@ -12,14 +12,14 @@ from src.core import config
 from src.core.logger import LOGGING
 from src.db import elastic, redis, database
 from src.api.urls import urls as app_route
-
+from fastapi.staticfiles import StaticFiles
 app = FastAPI(
     title=config.PROJECT_NAME,
     docs_url='/api/openapi',
     openapi_url='/api/openapi.json',
     default_response_class=ORJSONResponse,
 )
-
+app.mount("/media", StaticFiles(directory="media"), name="media")
 origins = [
     "*",
 ]

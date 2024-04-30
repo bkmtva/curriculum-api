@@ -1,11 +1,11 @@
 from typing import Annotated, List
-from fastapi import APIRouter, Depends, HTTPException, Body, status, Header, BackgroundTasks
+from fastapi import UploadFile, File, APIRouter, Depends, HTTPException, Body, status, Header, BackgroundTasks
 from fastapi.security import HTTPBearer
-from src.schema.course import CourseRequest, CourseCreate, CourseResponse, CourseFilter, CourseDetailSchema
+from src.schema.course import CourseInfo, CourseRequest, CourseCreate, CourseResponse, CourseFilter, CourseDetailSchema
 from src.services.course import get_course_service, CourseService
 from src.utils.jwt import TokenData, get_current_active_user
-
-
+from src.excel_files.from_excel import get_courses
+import os
 router = APIRouter(prefix="/course", tags=["course"])
 
 oauth2_scheme = HTTPBearer()
@@ -54,6 +54,15 @@ async def course_get(
     user_id = current_user.user_id
     return await course_service.get_by_id(course_id)
 
+@router.get('/courses_img')
+async def courses_img(
+        current_user: Annotated[TokenData, Depends(get_current_active_user)],
+
+        course_service: CourseService = Depends(get_course_service)
+):
+    user_id = current_user.user_id
+    return '/media/excel.png'
+
 @router.put("/{course_id}", response_model=CourseDetailSchema)
 async def course_update(
         current_user: Annotated[TokenData, Depends(get_current_active_user)],
@@ -71,3 +80,33 @@ async def course_delete(
         course_service: CourseService = Depends(get_course_service)
 ):
     return await course_service.delete_by_id(course_id)
+
+
+@router.post('/upload_excel', response_model=List[CourseInfo])
+async def courses_import(
+        excel_file: UploadFile = File(...),
+        current_user: Annotated[TokenData, Depends(get_current_active_user)] = '',
+        course_service: CourseService = Depends(get_course_service)
+):
+
+    if not excel_file.filename.endswith('.xlsx'):
+        raise HTTPException(status_code=400, detail="Uploaded file must be a Excel (xlsx) file.")
+    upload_dir = "/app/excel_files/courses"
+    os.makedirs(upload_dir, exist_ok=True)
+    file_path = os.path.join(upload_dir, excel_file.filename)
+    with open(file_path, "wb") as file:
+        file.write(excel_file.file.read())
+
+    courses_data = await get_courses(file_path)
+
+    created_courses = []
+    for course_data in courses_data:
+        if not course_data.get('user_id'):
+            course_data['user_id'] = current_user.user_id
+        course_data['term'] = str(course_data['term'])
+        course = CourseCreate(**course_data)
+        created_courses.append(course)
+        # created_course = await course_service.create_object(course)
+        # created_courses.append(created_course)
+    return created_courses
+
