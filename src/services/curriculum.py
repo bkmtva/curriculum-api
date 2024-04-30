@@ -179,6 +179,8 @@ class CurriculumService(BaseService):
 
             return all_currilims
 
+
+        total_ects_per_semester = {}
         async def update_curriculum(self, courses: List[dict] = None, curriculum_id: str = None,  user_id: str = None):
             curriculum = await self.db.execute(
                 select(self.model)
@@ -191,7 +193,7 @@ class CurriculumService(BaseService):
                 raise HTTPException(status_code=404, detail="Curriculum not found")
 
             await self.db.execute(delete(CurriculumCourse).where(CurriculumCourse.curriculum_id == curriculum.id))
-
+            total_ects_per_semester = {}
             for course_info in courses:
                 course_id = course_info.get("course_id")
                 semester = course_info.get("semester")
@@ -215,10 +217,14 @@ class CurriculumService(BaseService):
                     order_in_semester=order_in_semester
                 )
 
-                # Add the new instance to the curriculum's courses
+                if semester not in total_ects_per_semester:
+                    total_ects_per_semester[semester] = 0
+                total_ects_per_semester[semester] += course.ects
+                if total_ects_per_semester[semester] > 40:
+                    raise HTTPException(status_code=400, detail=f"Total ECTS for semester {semester} exceeds the limit of 30 ECTS")
                 curriculum.courses.append(curriculum_course)
 
-            # Commit changes
+
             await self.db.commit()
             return {"message": "Curriculum courses updated successfully"}
 

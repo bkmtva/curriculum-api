@@ -10,12 +10,13 @@ from typing import Optional
 from src.schema.faculty import FacultyResponse
 
 class UserRequest(BaseModel):
-    first_name: str or None = ""
-    last_name: str or None = ""
+    first_name: Optional[str] = ""
+    last_name: Optional[str] = ""
     email: str = ""
     profile_image: Optional[str] or None = ''
-    datetime_created: datetime = datetime.utcnow()
-    last_login_at: datetime or None = datetime.utcnow()
+    datetime_created: Optional[datetime] = datetime.utcnow()
+    datetime_updated: Optional[datetime] = datetime.utcnow()
+    last_login_at: Optional[datetime] = datetime.utcnow()
     is_active: bool = True
     is_superuser: bool = False
     faculty_id: UUID4 or str = uuid.UUID('5e1fb87d-4db4-4c06-ace3-b3a4d1302536')

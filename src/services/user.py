@@ -201,9 +201,9 @@ class UserService(BaseService):
             db_obj = await self._get_object_from_db_email(email)
             if not db_obj:
                 raise HTTPException(status_code=404, detail="Incorrect email or password")
-
+            print(db_obj, "validifjiegferger")
             obj_sch = self.schema.model_validate(db_obj.__dict__)
-
+            print(obj_sch, "egokoergkoroe")
             await self._put_object_to_cache(obj_sch)
         return obj_sch
 
@@ -318,14 +318,14 @@ class UserService(BaseService):
         """
         Send a reset password email to the user.
         """
-        sender_email = "hokkaido.vi@gmail.com"  # Your email address
-        receiver_email = email
+        from_email = "hokkaido.vi@gmail.com"  # Your email address
+        to_email = email
         password = "cymw uxty uytg qczi"  # Your email password
 
         message = MIMEMultipart("alternative")
         message["Subject"] = "Password Reset"
-        message["From"] = sender_email
-        message["To"] = receiver_email
+        message["From"] = from_email
+        message["To"] = to_email
 
         reset_link = f"http://49.13.154.79:3000/reset_password/{reset_token}"
         text = f"""\
@@ -346,16 +346,22 @@ class UserService(BaseService):
             </html>
             """
 
+
+
+        smtp_server = 'smtp.gmail.com'
+        smtp_port = 587
+
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(from_email, password)
         part1 = MIMEText(text, "plain")
         part2 = MIMEText(html, "html")
 
         message.attach(part1)
         message.attach(part2)
+        server.sendmail(from_email, to_email, message.as_string())
 
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(sender_email, password)
-            server.sendmail(sender_email, receiver_email, message.as_string())
-
+        server.quit()
     async def change_password(self, new_password_data, email):
         credential_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -365,16 +371,14 @@ class UserService(BaseService):
         if new_password_data.new_password != new_password_data.repeat_new_password:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New passwords do not match")
 
-        user = await self.get_user_by_email(email=email)
-        if user is None:
+        db_obj = await self._get_object_from_db_email(email=email)
+        if db_obj is None:
             raise credential_exception
         new_password = await self._get_password_hash(new_password_data.new_password)
-        user.password = new_password
-        await self.update_object(str(user.email), user)
-        await self.get_user_by_email(email=email)
-
-
-        # await self.db.refresh(db_obj)
+        setattr(db_obj, 'password', new_password)
+        self.db.add(db_obj)
+        await self.db_commit()
+        await self.db.refresh(db_obj)
         return {"message": "Password changed successfully!"}
 
 @lru_cache()
