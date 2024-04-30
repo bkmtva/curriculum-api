@@ -13,7 +13,7 @@ file_save = "curriculum.xlsx"
 
 
 
-def to_excel(curriculum: str):
+def to_excel(curriculum: str, file_save: str ="curriculum.xlsx"):
     dict_train = json.loads(curriculum)
     df = get_dataframe(dict_train)
     # Load the Excel file

@@ -5,6 +5,10 @@ from fastapi.security import HTTPBearer
 from src.utils.jwt import TokenData, get_current_active_user
 from src.excel_files.to_excel import to_excel
 from typing import Annotated, List
+import uuid
+from datetime import datetime
+import os
+
 router = APIRouter(prefix="/curriculum", tags=["curriculum"])
 
 oauth2_scheme = HTTPBearer()
@@ -77,21 +81,25 @@ async def curriculum_delete(curriculum_id: str,
                          curriculum_service: CurriculumService = Depends(get_curriculum_service)):
     return await curriculum_service.delete_by_id(curriculum_id)
 
-
+async def generate_unique_filename():
+    unique_id = uuid.uuid4().hex[:8]  # Generate a random UUID and take the first 8 characters
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")  # Current timestamp
+    return f"curriculum_{timestamp}_{unique_id}.xlsx"
 @router.get('/download_curriculum')
 async def curriculum_download(curriculum_id: str, current_user: Annotated[TokenData, Depends(get_current_active_user)],
                          curriculum_service: CurriculumService = Depends(get_curriculum_service)):
     user_id = current_user.user_id
     currciculum = await curriculum_service.get_curriculum(user_id=user_id, curriculum_id=curriculum_id)
     curr = currciculum.json()
-    file_name = to_excel(curr)
-    excel_file_path = f"/app/excel_files/{file_name}"
+    file_save = await generate_unique_filename()
+    file_name = to_excel(curriculum=curr, file_save=file_save)
+    excel_file_path = f"/app/excel_files/{file_name}" if file_name else None
     with open(excel_file_path, "rb") as file:
         content = file.read()
     response = Response(content=content)
     response.headers["Content-Disposition"] = f"attachment; filename=curriculum.xlsx"
     response.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-
+    os.remove(excel_file_path) if excel_file_path else None
     return response
 
 
