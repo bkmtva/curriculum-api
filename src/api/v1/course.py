@@ -114,7 +114,7 @@ async def courses_import(
 
 @router.get('/example_excel/')
 async def courses_excel(
-
+        current_user: Annotated[TokenData, Depends(get_current_active_user)],
         course_service: CourseService = Depends(get_course_service)
 ):
     # user_id = current_user.user_id
