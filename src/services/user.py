@@ -66,7 +66,7 @@ class UserService(BaseService):
             file_path = f"/app/media/{file.filename}"
             with open(file_path, "wb") as f:
                 f.write(contents)
-            form_data.profile_image = f'/media/{file.filename}'
+            form_data.profile_image = f'http://49.13.154.79/media/{file.filename}'
         form_data.password = await self._get_password_hash(form_data.password)
         db_obj = self.model(**form_data.dict())
         self.db.add(db_obj)
@@ -106,7 +106,7 @@ class UserService(BaseService):
             file_path = f"/app/media/{file.filename}"
             with open(file_path, "wb") as f:
                 f.write(contents)
-            obj_sch.profile_image = f'/media/{file.filename}'
+            obj_sch.profile_image = f'http://49.13.154.79/media/{file.filename}'
         if obj_sch.password and obj_sch.old_password:
             if not await self._verify_password(obj_sch.old_password, db_obj.password):
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid old password")
