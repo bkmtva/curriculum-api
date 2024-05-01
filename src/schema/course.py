@@ -75,3 +75,25 @@ class CourseRequest(BaseModel):
 class CourseFilter(BaseModel):
     course_id: Optional[str] = None
     user_id: Optional[str] = None
+
+
+
+class CourseUpdate(BaseModel):
+    title: Optional[str] = None
+    title_kz: Optional[str] = None
+    title_ru: Optional[str] = None
+    course_code: Optional[str] = None
+    teor: Optional[int] = None
+    pr: Optional[str] = None
+    cr: Optional[int] = None
+    ects: Optional[int] = None
+    term: Optional[str] = None
+    user_id: Optional[str] = None
+    sub_ids: Optional[List[str]] = []
+    pre_ids: Optional[List[str]] = []
+
+    class Config:
+        json_loads = orjson.loads
+        json_dumps = orjson_dumps
+        use_enum_values = True
+        from_attributes = True

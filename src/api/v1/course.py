@@ -1,7 +1,7 @@
 from typing import Annotated, List
 from fastapi import UploadFile, File, APIRouter, Depends, HTTPException, Body, status, Header, BackgroundTasks
 from fastapi.security import HTTPBearer
-from src.schema.course import CourseInfo, CourseRequest, CourseCreate, CourseResponse, CourseFilter, CourseDetailSchema
+from src.schema.course import CourseInfo, CourseUpdate, CourseRequest, CourseCreate, CourseResponse, CourseFilter, CourseDetailSchema
 from src.services.course import get_course_service, CourseService
 from src.utils.jwt import TokenData, get_current_active_user
 from src.excel_files.from_excel import get_courses
@@ -54,21 +54,22 @@ async def course_get(
     user_id = current_user.user_id
     return await course_service.get_by_id(course_id)
 
-@router.get('/courses_img')
+@router.get('/courses_img/')
 async def courses_img(
         current_user: Annotated[TokenData, Depends(get_current_active_user)],
 
         course_service: CourseService = Depends(get_course_service)
 ):
     user_id = current_user.user_id
-    return '/media/excel.png'
+    return 'http://49.13.154.79/media/example_excel.png'
 
 @router.put("/{course_id}", response_model=CourseDetailSchema)
 async def course_update(
         current_user: Annotated[TokenData, Depends(get_current_active_user)],
         course_id: str,
+        course_schema: CourseUpdate = Body(),
         course_service: CourseService = Depends(get_course_service),
-        course_schema: CourseCreate = Body()
+
 ):
     user_id = current_user.user_id
     return await course_service.update_object(course_id, course_schema)
