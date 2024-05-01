@@ -1,5 +1,5 @@
 from typing import Annotated, List
-from fastapi import UploadFile, File, APIRouter, Depends, HTTPException, Body, status, Header, BackgroundTasks
+from fastapi import UploadFile, Response, File, APIRouter, Depends, HTTPException, Body, status, Header, BackgroundTasks
 from fastapi.security import HTTPBearer
 from src.schema.course import CourseInfo, CourseUpdate, CourseRequest, CourseCreate, CourseResponse, CourseFilter, CourseDetailSchema
 from src.services.course import get_course_service, CourseService
@@ -111,3 +111,18 @@ async def courses_import(
         # created_courses.append(created_course)
     return created_courses
 
+
+@router.get('/example_excel/')
+async def courses_excel(
+
+        course_service: CourseService = Depends(get_course_service)
+):
+    # user_id = current_user.user_id
+
+    excel_file_path = f"src/excel_files/add_courses.xlsx"
+    with open(excel_file_path, "rb") as file:
+        content = file.read()
+    response = Response(content=content)
+    response.headers["Content-Disposition"] = f"attachment; filename=example_excel.xlsx"
+    response.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    return response
