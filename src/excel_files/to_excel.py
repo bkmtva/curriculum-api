@@ -263,13 +263,15 @@ def to_excel(curriculum: str, file_save: str ="curriculum.xlsx"):
     program_code ='6B'+ dict_data.get('program').get('code') 
     program_name =  dict_data.get('program').get('title_kz')
     degree_name =  dict_data.get('degree_name')
-    program_in_kz = 'Білім беру бағдарламасы: ' + program_code + ' ' + program_name
-    program_in_ru = 'Образовательная программа: ' + program_code + ' ' + program_name
-    program_in_en = 'Program: ' + program_code + ' ' + program_name
+    program_info = str(program_code) + ' ' + str(program_name)
+    program_in_kz = 'Білім беру бағдарламасы: ' + program_info
+    program_in_ru = 'Образовательная программа: ' + program_info
+    program_in_en = 'Program: ' + program_info
 
-    degree_in_kz = 'Берілетін дәреже: ' + degree_name + ' ' + program_code
-    degree_in_ru = 'Присуждаемая степень: '+ degree_name + ' ' + program_code
-    degree_in_en = 'Degree: ' + degree_name + ' ' + program_code
+    degree_info = str(degree_name) + ' ' + str(program_code)
+    degree_in_kz = 'Берілетін дәреже: ' + degree_info
+    degree_in_ru = 'Присуждаемая степень: '+ degree_info
+    degree_in_en = 'Degree: ' + degree_info
 
     # Set the values in the specified cells
     ws['A17'].value = program_in_kz
