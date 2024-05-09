@@ -8,7 +8,8 @@ import pandas as pd
 import json
 
 SOURCE_PATH = "/app/excel_files/"
-BASE_FILE = SOURCE_PATH+"template.xlsx"
+BASE_FILE = 'template.xlsx'
+BASE_PATH = SOURCE_PATH+"template.xlsx"
 file_save = "curriculum.xlsx"
 
 # response ="C:/Users/anarb/diploma/response.json"
@@ -99,7 +100,7 @@ def to_excel(curriculum: str, file_save: str ="curriculum.xlsx"):
         return BASE_FILE
     
     # Load the Excel file
-    wb = load_workbook(filename=BASE_FILE)
+    wb = load_workbook(filename=BASE_PATH)
     ws = wb['Curriculum']
 
     # Starting column and row to write the data
