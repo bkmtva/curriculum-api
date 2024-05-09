@@ -112,7 +112,9 @@ class UserService(BaseService):
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid old password")
             obj_sch.password = await self._get_password_hash(obj_sch.password)
             del obj_sch.old_password
-
+        else:
+            obj_sch.password = None
+            obj_sch.old_password = None
         await self._update_object_in_db(db_obj=db_obj, obj_sch=obj_sch)
         await self.db.refresh(db_obj)
         if self.detail_schema:
@@ -327,7 +329,7 @@ class UserService(BaseService):
         message["From"] = from_email
         message["To"] = to_email
 
-        reset_link = f"http://49.13.154.79:3000/reset_password/{reset_token}"
+        reset_link = f"http://49.13.154.79:3000/reset-password?token={reset_token}"
         text = f"""\
             Hi,
             To reset your password, click on the following link:
