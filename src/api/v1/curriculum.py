@@ -99,7 +99,7 @@ async def curriculum_download(curriculum_id: str, current_user: Annotated[TokenD
     response = Response(content=content)
     response.headers["Content-Disposition"] = f"attachment; filename=curriculum.xlsx"
     response.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    os.remove(excel_file_path) if excel_file_path else None
+    os.remove(excel_file_path) if excel_file_path and 'template' not in excel_file_path else None
     return response
 
 
