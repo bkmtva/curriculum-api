@@ -10,7 +10,6 @@ import json
 SOURCE_PATH = "/app/excel_files/"
 BASE_FILE = 'template.xlsx'
 BASE_PATH = SOURCE_PATH+"template.xlsx"
-file_save = "curriculum.xlsx"
 
 # response ="C:/Users/anarb/diploma/response.json"
 # with open(response, encoding='utf8') as response_file:
