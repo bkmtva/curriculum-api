@@ -260,8 +260,8 @@ def to_excel(curriculum: str, file_save: str ="curriculum.xlsx"):
             ws.cell(row=row, column=col).border = thin_border
 
     # Set program information
-    program_code ='6B'+ dict_data.get('program').get('code') 
-    program_name =  dict_data.get('program').get('title_kz')
+    program_code ='6B'+ dict_data.get('program').get('cipher')
+    program_name =  dict_data.get('program').get('title')
     degree_name =  dict_data.get('degree_name')
     program_info = str(program_code) + ' ' + str(program_name)
     program_in_kz = 'Білім беру бағдарламасы: ' + program_info
@@ -298,7 +298,8 @@ def to_excel(curriculum: str, file_save: str ="curriculum.xlsx"):
         finish_year = finish_year+2
     elif  degree_name=='PhD':
         finish_year = finish_year+3  
-        
+    else:
+        finish_year = finish_year+4    
     years=str(current_year)+'-'+str(finish_year)
     academic_year =years+' оқу жылдарына/ на ' + years+' учебные годы / '+years+ ' academic years'
     ws['A20'].value = academic_year

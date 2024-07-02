@@ -41,11 +41,13 @@ class ProgramService(BaseService):
                 .join(subquery, and_(Curriculum.program_id == subquery.c.program_id,
                       Curriculum.id == subquery.c.latest_curriculum_id)
                       )
-                .options(selectinload(Curriculum.program),)
+                .options(selectinload(Curriculum.program).options(selectinload(Program.degree),
+                                 ),)
                 .filter(Curriculum.year == year, Curriculum.created_by == user_id)
             )
         ).scalars().all()
-        main_programs = [curriculum.program for curriculum in main_curriculums]
+        main_programs = [curriculum.program.__dict__ for curriculum in main_curriculums]
+        main_programs = sorted(main_programs, key=lambda x: x['code'])
         if not main_curriculums:
             raise HTTPException(status_code=404, detail=f"No programs with curriculums found for the year {year}")
         return {"main_programs": main_programs,}

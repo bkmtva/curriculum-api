@@ -28,7 +28,7 @@ class Curriculum(UUIDMixin, CreatedUpdatedMixin, Base):
     is_main = sa.Column(sa.Boolean, default=False)
 
     program_id = sa.Column(UUID(as_uuid=True), ForeignKey("tbl_program.id"))
-    program = relationship("Program", back_populates="curriculums")
+    program = relationship("Program", back_populates="curriculums", order_by="Program.code")
 
     created_by = sa.Column(UUID(as_uuid=True), ForeignKey("tbl_user.id"))
     user = relationship("User", back_populates="curriculums")
